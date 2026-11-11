@@ -1,0 +1,26 @@
+## Interface: 16001
+## Title: ProfScan
+## Notes: Fast targeted auction house scanner and order book watcher for profession materials
+## Version: 0.6.0
+## SavedVariables: ProfScanDB
+## IconTexture: Interface\Icons\INV_Misc_Coin_02
+## AddonCompartmentFunc: ProfScan_OnCompartmentClick
+
+Items.lua
+RecipeData.lua
+TradeData.lua
+ImportedPrices.lua
+Core.lua
+Stats.lua
+Recipes.lua
+Pricing.lua
+Scanner.lua
+Watch.lua
+UI.lua
+Charts.lua
+RecipesUI.lua
+TradeUI.lua
+RecipeView.lua
+CrateView.lua
+ItemView.lua
+DataUI.lua

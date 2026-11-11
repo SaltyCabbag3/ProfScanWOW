@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Local data (the tools keep these in Documents/ProfScan by default)
+*.db
+*.db-journal
+blizzard_api.json
+*.csv
+
+# Editors / OS
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
