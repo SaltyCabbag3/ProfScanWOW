@@ -31,7 +31,7 @@ local _, ns = ...
 ]]
 
 local ROWS = 8
-local ROUTE_ROWS = 4
+local ROUTE_ROWS = 6
 local INDENT = 14
 
 local function Seconds(s)
@@ -340,6 +340,9 @@ function ns.UI.BuildRecipeView(frame)
           lines[#lines + 1] = ("Time per craft: %s for the product + %s for crafted reagents"):format(
             Seconds(own), Seconds(math.max(0, p.time - own)))
         end
+        if r.extra and r.extra > 0 then
+          lines[#lines + 1] = ("Plus %s disenchanting what one craft makes (no downtime assumed)"):format(Seconds(r.extra))
+        end
         if p.approx then lines[#lines + 1] = "Some cast times are unknown; those crafts count as instant." end
         if p.cooldown then lines[#lines + 1] = "Involves a recipe with a cooldown, so per hour doesn't apply." end
       end
@@ -360,10 +363,10 @@ function ns.UI.BuildRecipeView(frame)
           r.label,
           p and (#names == 0 and "nothing" or (#names .. " reagent" .. (#names > 1 and "s" or ""))) or "-",
           p and ns.Money(p.cost) or "?",
-          p and ((p.approx and "~" or "") .. Seconds(p.time)) or "-",
+          p and ((p.approx and "~" or "") .. Seconds(p.time + (r.extra or 0))) or "-",
           ns.SignedMoney(r.margin and math.floor(r.margin + 0.5)),
           perHour,
-          r.sell == "ah" and "AH" or "vendor",
+          r.sell == "ah" and "AH" or r.sell == "vendor" and "vendor" or "disench.",
         },
       }
     end

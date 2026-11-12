@@ -576,20 +576,23 @@ function ns.RouteCrafted(point)
   return set
 end
 
--- The four routes for a recipe's crafting tree (root = ns:CraftTree(recipe)).
--- Returns { { key, label, sell = "ah" | "vendor", point, revenue, margin, perHour }, ... }
--- (point nil when the tree can't be priced; perHour nil when not meaningful).
+-- The routes for a recipe's crafting tree (root = ns:CraftTree(recipe)): best margin and
+-- best margin per hour for each way to cash in the product (AH, vendor, and disenchanting
+-- when it disenchants). Returns { { key, label, sell = "ah" | "vendor" | "de", point,
+-- revenue, margin, perHour }, ... } (point nil when the tree can't be priced; perHour nil
+-- when not meaningful). Disenchant routes add one Disenchant cast per item made to the
+-- time and assume no downtime between casts.
 function ns:CraftRoutes(recipe, root, e)
   local points = RecipeRoutes(self, root)
   for _, p in ipairs(points) do -- the tree is for a whole batch; report per craft
     p.cost, p.time = p.cost / root.qty, p.time / root.qty
   end
   local cheapest = points[1]
-  local function BestPerHour(revenue)
+  local function BestPerHour(revenue, extra)
     local best, bestValue
     for _, p in ipairs(points) do
-      if not p.cooldown and p.time > 0 then
-        local value = (revenue - p.cost) / p.time
+      if not p.cooldown and p.time + extra > 0 then
+        local value = (revenue - p.cost) / (p.time + extra)
         if not bestValue or value > bestValue then best, bestValue = p, value end
       end
     end
@@ -598,24 +601,28 @@ function ns:CraftRoutes(recipe, root, e)
     return best or cheapest -- a cooldown recipe: per hour doesn't apply, show the cheapest route
   end
   local routes = {}
-  for _, sell in ipairs({ "ah", "vendor" }) do
-    local perItem = sell == "ah" and e.ahNet or e.vendorSell
+  local sells = { "ah", "vendor" }
+  if e.deUnit then sells[3] = "de" end
+  local deTime = e.deUnit and (self:DisenchantCastTime() or 0) * e.yield or 0 -- disenchanting what one craft makes
+  for _, sell in ipairs(sells) do
+    local perItem = sell == "ah" and e.ahNet or sell == "vendor" and e.vendorSell or e.deUnit
     local revenue = perItem and math.floor(perItem * e.yield)
-    local label = sell == "ah" and "AH" or "vendor"
+    local label = sell == "ah" and "AH" or sell == "vendor" and "vendor" or "disenchant"
+    local extra = sell == "de" and deTime or 0
     routes[#routes + 1] = { key = sell .. "Margin", label = "Best " .. label .. " margin", sell = sell,
-                            point = cheapest, revenue = revenue }
+                            point = cheapest, revenue = revenue, extra = extra }
     routes[#routes + 1] = { key = sell .. "Hour", label = "Best " .. label .. " margin/hour", sell = sell,
-                            point = revenue and BestPerHour(revenue) or nil, revenue = revenue }
+                            point = revenue and BestPerHour(revenue, extra) or nil, revenue = revenue, extra = extra }
   end
   for _, r in ipairs(routes) do
     local p = r.point
     if p and r.revenue then
       r.margin = r.revenue - p.cost
-      if not p.cooldown and p.time > 0 then r.perHour = r.margin / p.time * 3600 end
+      if not p.cooldown and p.time + r.extra > 0 then r.perHour = r.margin / (p.time + r.extra) * 3600 end
     end
   end
-  table.sort(routes, function(a, b) -- AH margin, vendor margin, AH/hour, vendor/hour
-    local order = { ahMargin = 1, vendorMargin = 2, ahHour = 3, vendorHour = 4 }
+  table.sort(routes, function(a, b) -- margins (AH, vendor, DE), then per hour (AH, vendor, DE)
+    local order = { ahMargin = 1, vendorMargin = 2, deMargin = 3, ahHour = 4, vendorHour = 5, deHour = 6 }
     return order[a.key] < order[b.key]
   end)
   return routes
