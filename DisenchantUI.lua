@@ -173,3 +173,65 @@ function ns.UI.BuildDisenchantPane(parent)
 
   return { frame = frame, refresh = refresh }
 end
+
+-- A small "what does this disenchant into" table for the item and recipe views:
+-- header (average value), the band, then one row per material (chance, count, value).
+-- box:SetItem(id, perCraft) fills it and shows it; returns false (and hides) when the
+-- item doesn't disenchant. perCraft = items one craft makes (recipe view).
+function ns.UI.CreateDisenchantBox(parent, width)
+  local UI = ns.UI
+  local box = CreateFrame("Frame", nil, parent)
+  box:SetSize(width, 150)
+  local header = UI.Text(box, "GameFontNormal")
+  header:SetPoint("TOPLEFT", 0, 0)
+  header:SetWidth(width)
+  local sub = UI.Text(box, "GameFontDisableSmall")
+  sub:SetPoint("TOPLEFT", header, "BOTTOMLEFT", 0, -2)
+  sub:SetWidth(width)
+  local list = UI.CreateTable(box, {
+    { title = "Disenchants into", width = width - 158 },
+    { title = "Chance", width = 46, justify = "RIGHT" },
+    { title = "Count", width = 40, justify = "RIGHT" },
+    { title = "Value", width = 72, justify = "RIGHT" },
+  }, 3)
+  list:SetPoint("TOPLEFT", sub, "BOTTOMLEFT", 0, -4)
+  list.onClick = function(row)
+    if IsModifiedClick("CHATLINK") then UI.InsertItemLink(row.id) else ns:OpenItem(row.id) end
+  end
+
+  function box:SetItem(id, perCraft)
+    local value, complete, band = ns:DisenchantItemValue(id)
+    if not band then
+      self:Hide()
+      return false
+    end
+    header:SetText(("Disenchant: %s%s average per item%s"):format(band.assumed and "~" or "", ns.Money(value),
+      complete and "" or " |cffff8080*|r"))
+    local extra = perCraft and perCraft ~= 1
+      and ("   x %g per craft = %s"):format(perCraft, ns.Money(math.floor(value * perCraft + 0.5))) or ""
+    sub:SetText(band.label .. extra .. (band.assumed and "   |cffaaaaaa(61-65 yields assumed)|r" or ""))
+    local rows = {}
+    for _, y in ipairs(band.yields) do
+      local item, chance, lo, hi = y[1], y[2], y[3], y[4]
+      local unit = ns:SellPrice(item)
+      local name = UI.ItemName(item)
+      rows[#rows + 1] = {
+        id = item,
+        icon = UI.GetItemIcon(item),
+        tooltipLines = { unit and ("Sells for %s each (AH after the cut, or a vendor)"):format(ns.Money(unit))
+          or "No price yet: run the Disenchant scan" },
+        cells = {
+          name,
+          ("%g%%"):format(chance * 100),
+          lo == hi and tostring(lo) or (lo .. "-" .. hi),
+          unit and ns.Money(math.floor(chance * (lo + hi) / 2 * unit + 0.5)) or "|cffff8080?|r",
+        },
+      }
+    end
+    list:SetData(rows)
+    self:Show()
+    return true
+  end
+
+  return box
+end

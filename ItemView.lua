@@ -67,6 +67,9 @@ function ns.UI.BuildItemView(frame)
   lastBuy:SetPoint("TOPLEFT", 0, -310)
   lastBuy:SetWidth(280)
   lastBuy:SetJustifyV("TOP")
+  -- what it disenchants into (gear only; hidden otherwise)
+  local deBox = UI.CreateDisenchantBox(frame, 280)
+  deBox:SetPoint("TOPLEFT", 0, -340)
 
   -- Right: chart and recipes --------------------------------------------------------------
   local rangeButtons = {}
@@ -161,6 +164,8 @@ function ns.UI.BuildItemView(frame)
     else
       lastBuy:SetText("")
     end
+
+    deBox:SetItem(itemID)
 
     -- chart
     for i, b in ipairs(rangeButtons) do

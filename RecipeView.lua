@@ -250,6 +250,10 @@ function ns.UI.BuildRecipeView(frame)
     end
   end
 
+  -- what the product disenchants into, right of the tree (hidden when it doesn't)
+  local deBox = UI.CreateDisenchantBox(frame, 290)
+  deBox:SetPoint("TOPLEFT", tree, "TOPRIGHT", 14, 0)
+
   -- Routes ---------------------------------------------------------------------------------
   local routes = UI.CreateTable(frame, {
     { title = "Route", width = 170 },
@@ -403,6 +407,7 @@ function ns.UI.BuildRecipeView(frame)
     end
 
     local e = ns:RecipeEconomics(recipe)
+    if recipe.item > 0 then deBox:SetItem(recipe.item, e.yield) else deBox:Hide() end
     local root = ns:CraftTree(recipe)
     local cheapest = root.complete and root.unit or nil
     local crafted = 0

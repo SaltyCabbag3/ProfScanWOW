@@ -14,7 +14,8 @@ local _, ns = ...
   name) minus cost; "DE margin" = disenchanting every item made instead
   (average disenchant value, Disenchant.lua), and how sellable the product is: average quantity listed over 7 days
   and units sold per day (watch mode, or "~" = Blizzard API estimate).
-  "Max AH/h" and "Max vend/h": the best margin per hour of crafting over every
+  "Max AH/h", "Max vend/h" and "Max DE/h" (products that disenchant: craft,
+  then disenchant everything, no downtime): the best margin per hour of crafting over every
   route (each reagent bought or crafted), as in the recipe view's routes.
   Tags after the name say what limits a recipe (RecipeLocks.lua): orange "cd"
   cooldown, blue crafting station, purple specialization, yellow reputation
@@ -110,7 +111,9 @@ local function BestPerHour(recipe, e)
     if ok and routes then
       cached = {}
       for _, r in ipairs(routes) do
-        if r.key == "ahHour" then cached.ah = r elseif r.key == "vendorHour" then cached.vendor = r end
+        if r.key == "ahHour" then cached.ah = r
+        elseif r.key == "vendorHour" then cached.vendor = r
+        elseif r.key == "deHour" then cached.de = r end
       end
     end
     routeCache[key] = cached
@@ -695,6 +698,7 @@ function ns.UI.BuildRecipesPage(page)
     { title = "Sold/d", width = 44, justify = "RIGHT", key = "sold" },
     { title = "Max AH/h", width = 74, justify = "RIGHT", key = "maxAH" },
     { title = "Max vend/h", width = 74, justify = "RIGHT", key = "maxVendor" },
+    { title = "Max DE/h", width = 74, justify = "RIGHT", key = "maxDE" },
   }, ROWS)
   -- column tips for the best-route columns
   local HOUR_NOTE = "\"cd\" = cooldown recipe, \"?\" = cast time unknown, grey \"~\" = some crafted "
@@ -709,6 +713,9 @@ function ns.UI.BuildRecipesPage(page)
       .. "loaded yet); * = some materials aren't priced.", "Click to sort." },
     [11] = { "Best AH margin per hour over every crafting route: each reagent bought or crafted, "
       .. "whichever earns the most per hour of crafting (the recipe view's \"Best AH margin/hour\" route).", HOUR_NOTE },
+    [13] = { "Best margin per hour when every item made is disenchanted (products that disenchant only): "
+      .. "each reagent bought or crafted, whichever earns the most per hour of crafting plus one Disenchant "
+      .. "cast per item, no downtime (the recipe view's \"Best disenchant margin/hour\" route).", HOUR_NOTE },
     [12] = { "Best vendor margin per hour over every crafting route: each reagent bought or crafted, "
       .. "whichever earns the most per hour of crafting (the recipe view's \"Best vendor margin/hour\" route).", HOUR_NOTE },
   }) do
@@ -813,6 +820,7 @@ function ns.UI.BuildRecipesPage(page)
             local best = BestPerHour(recipe, e)
             local bestAH = best and best.ah and best.ah.perHour
             local bestVendor = best and best.vendor and best.vendor.perHour
+            local bestDE = best and best.de and best.de.perHour
             local icon = recipe.item > 0 and UI.GetItemIcon(recipe.item)
               or (C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(recipe.spell))
             rows[#rows + 1] = {
@@ -834,6 +842,7 @@ function ns.UI.BuildRecipesPage(page)
                 sold = sold or -1,
                 maxAH = bestAH or -1e12,
                 maxVendor = bestVendor or -1e12,
+                maxDE = bestDE or -1e12,
               },
               cells = {
                 (isKnown and "|cff40ff40[K]|r " or "") .. name
@@ -851,6 +860,7 @@ function ns.UI.BuildRecipesPage(page)
                 ns.SoldText(sold, soldVia),
                 best and BestHourText(e, best.ah) or "-",
                 best and BestHourText(e, best.vendor) or "-",
+                e.deUnit and best and BestHourText(e, best.de) or "-",
               },
             }
           end
