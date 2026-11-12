@@ -20,6 +20,12 @@ local _, ns = ...
 
   Deep scan: after the quick scan, one SendSearchQuery per commodity, reading
   the cheapest listings to build a price ladder ("price:quantity" levels).
+
+  Disenchant scan: browses the auction house for uncommon, rare and epic
+  weapons and armor (one SendBrowseQuery per quality, all pages), keeping the
+  lowest price, quantity and item level of each item in ns.db.deScan, then
+  deep-scans the enchanting materials. No item list needed, so it also finds
+  gear the game files don't describe.
 ]]
 
 local REQUEST_TIMEOUT = 10 -- seconds to wait for an answer before resending
@@ -50,6 +56,7 @@ end
 ns.KeyInfo = KeyInfo
 
 local function JobReady(job)
+  if job.kind == "browse" then return true end
   if job.kind == "commodity" then return KeyInfo(job.id) ~= nil end
   for _, id in ipairs(job.ids) do
     if not KeyInfo(id) then return false end
@@ -57,8 +64,13 @@ local function JobReady(job)
   return true
 end
 
+local GEAR_CLASSES = { { classID = 2 }, { classID = 4 } } -- weapons, armor
+
 local function SendJob(job)
-  if job.kind == "batch" then
+  if job.kind == "browse" then
+    C_AuctionHouse.SendBrowseQuery({ searchString = "", sorts = PRICE_SORT, minLevel = 0, maxLevel = 0,
+                                     filters = { job.filter }, itemClassFilters = GEAR_CLASSES })
+  elseif job.kind == "batch" then
     local keys = {}
     for i, id in ipairs(job.ids) do keys[i] = Key(id) end
     C_AuctionHouse.SearchForItemKeys(keys, PRICE_SORT)
@@ -142,12 +154,35 @@ local function DeepResult(job, book)
   scan.results[job.id] = { min = book.min, qty = book.total, ladder = table.concat(parts, "/") }
 end
 
+-- Disenchant scan: one quality's weapons and armor.
+local function BrowseResult(job, results)
+  for _, r in ipairs(results) do
+    local key = r.itemKey
+    local id = key and key.itemID
+    if id and (r.minPrice or 0) > 0 then
+      local cur = scan.gear[id]
+      if not cur then
+        cur = { m = r.minPrice, n = 0, q = job.quality }
+        scan.gear[id] = cur
+      elseif r.minPrice < cur.m then
+        cur.m = r.minPrice
+      end
+      cur.n = cur.n + (r.totalQuantity or 0)
+      if (key.itemLevel or 0) > 0 then cur.l = key.itemLevel end
+    end
+  end
+  scan.browsed = scan.browsed + 1
+end
+
 local function ScanFail()
   scan.failed = scan.failed + 1
 end
 
--- deep: also read price levels; focused: scan the focused scan list instead of the full one.
+-- deep: also read price levels. focused: true = the focused scan list instead of the
+-- full one; "disenchant" = the Disenchant scan (gear by browsing, then the enchanting materials).
 function ns:StartScan(deep, focused)
+  local disenchant = focused == "disenchant"
+  if disenchant then deep = true end
   if not self.ahOpen then return self.Print("Open the auction house first.") end
   if scan then return self.Print("A scan is already running. /pscan stop cancels it.") end
   if not (C_AuctionHouse and C_AuctionHouse.SearchForItemKeys) then
@@ -155,7 +190,7 @@ function ns:StartScan(deep, focused)
   end
 
   local items = {}
-  for i, id in ipairs(focused and self.focusItems or self.items) do items[i] = id end
+  for i, id in ipairs(disenchant and self.DE_MATERIALS or focused and self.focusItems or self.items) do items[i] = id end
   if #items == 0 then
     return self.Print(focused and "The focused scan list is empty. Add items from a recipe, an item or the "
       .. "Professions tab (\"Focus recipes\"), or with /pscan fadd <item>." or "The scan list is empty.")
@@ -163,6 +198,16 @@ function ns:StartScan(deep, focused)
   for _, id in ipairs(items) do KeyInfo(id) end -- start loading anything not cached yet
 
   local jobs, size = {}, self.db.settings.batchSize
+  if disenchant then
+    local F = Enum and Enum.AuctionHouseFilter
+    if not (F and F.UncommonQuality and C_AuctionHouse.SendBrowseQuery) then
+      return self.Print("This client can't browse the auction house by quality, so the Disenchant scan is unavailable.")
+    end
+    for quality, filter in pairs({ [2] = F.UncommonQuality, [3] = F.RareQuality, [4] = F.EpicQuality }) do
+      jobs[#jobs + 1] = { kind = "browse", owner = "scan", quality = quality, filter = filter,
+                          onResult = BrowseResult, onFail = ScanFail }
+    end
+  end
   for i = 1, #items, size do
     local ids, set = {}, {}
     for j = i, math.min(i + size - 1, #items) do
@@ -182,7 +227,7 @@ function ns:StartScan(deep, focused)
 
   scan = {
     jobs = jobs, pos = 0, key = self.ahKey, stamp = time(), started = GetTime(), deep = deep,
-    items = items, focused = focused,
+    items = items, focused = focused, gear = {}, browsed = 0,
     results = {}, -- [itemID] = { min =, qty =, ladder = }
     covered = {}, -- [itemID] = true once a batch containing it came back
     failed = 0,
@@ -200,6 +245,7 @@ function ns:IsScanning()
 end
 
 function ns:ScanName(deep, focused)
+  if focused == "disenchant" then return "Disenchant scan" end
   return (focused and "Focused scan" or "Full scan") .. (deep and " (deep)" or " (quick)")
 end
 
@@ -216,7 +262,7 @@ local function NextScanJob()
       ns:FinishScan()
       return nil
     end
-    if job.kind == "batch" then return job end
+    if job.kind == "batch" or job.kind == "browse" then return job end
     -- Deep job: only commodities (stackable goods) have a single price ladder,
     -- and there is nothing to read for items the quick scan found unlisted.
     local info, quick = KeyInfo(job.id), s.results[job.id]
@@ -239,6 +285,12 @@ function ns:FinishScan(reason)
       self:AddRecord(s.key, s.stamp, id, r.min, r.qty, r.ladder or "")
       saved = saved + 1
     end
+  end
+  if s.focused == "disenchant" and s.browsed > 0 then
+    local n = 0
+    for _ in pairs(s.gear) do n = n + 1 end
+    self.db.deScan[s.key] = { t = s.stamp, items = s.gear, partial = s.browsed < 3 or nil }
+    self.Print(("Disenchant scan: %d pieces of gear listed."):format(n))
   end
   self.Print(("%s %s: %d items saved in %.1fs%s."):format(
     self:ScanName(s.deep, s.focused), reason or "done", saved, GetTime() - s.started,
@@ -283,14 +335,25 @@ end
 
 -- Results --------------------------------------------------------------------------
 
+local GetItemInfoInstant = C_Item and C_Item.GetItemInfoInstant or GetItemInfoInstant
+
+-- Whether a browse result row can be the answer to our request.
+local function OurRow(job, r)
+  local id = r.itemKey and r.itemKey.itemID
+  if not id then return false end
+  if job.kind == "batch" then return job.set[id] == true end
+  local classID = select(6, GetItemInfoInstant(id))
+  return classID == nil or classID == 2 or classID == 4 -- nil: unknown to this client, can't tell
+end
+
 function ns:AUCTION_HOUSE_BROWSE_RESULTS_UPDATED()
-  if not Waiting("batch") then return end
+  if not (Waiting("batch") or Waiting("browse")) then return end
   local results = C_AuctionHouse.GetBrowseResults()
   for _, r in ipairs(results) do
     -- Rows for items we did not ask for mean this answer belongs to another
     -- search (the default UI's favorites list, a manual search). Keep waiting;
     -- the timeout resends ours if needed.
-    if not (r.itemKey and req.set[r.itemKey.itemID]) then return end
+    if not OurRow(req, r) then return end
   end
   if not C_AuctionHouse.HasFullBrowseResults() then
     C_AuctionHouse.RequestMoreBrowseResults()

@@ -22,7 +22,7 @@ local _, ns = ...
   at most twice a second while it is open.
 ]]
 
-local WIDTH, HEIGHT = 980, 540
+local WIDTH, HEIGHT = 980, 580
 local ROW_H = 18
 local PRICE_ROWS = 19
 local WATCH_ROWS = 8
@@ -690,7 +690,7 @@ local ahPanel
 local function CreateAHPanel()
   local host = AuctionHouseFrame or AuctionFrame
   if not host then return end
-  ahPanel = Panel(nil, host, 186, 254)
+  ahPanel = Panel(nil, host, 186, 284)
   ahPanel:SetPoint("TOPLEFT", host, "TOPRIGHT", 2, 0)
   ahPanel:SetClampedToScreen(true)
 
@@ -709,8 +709,20 @@ local function CreateAHPanel()
     ns.UI.ScanButtonTooltip(btn, b[2], b[3])
     scanButtons[#scanButtons + 1], prev = btn, btn
   end
+  local deBtn = Button(ahPanel, "Disenchant scan", 162, function() ns:StartScan(true, "disenchant") end)
+  deBtn:SetPoint("TOP", prev, "BOTTOM", 0, -10)
+  deBtn:SetMotionScriptsWhileDisabled(true)
+  deBtn:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_TOP")
+    GameTooltip:SetText("Disenchant scan")
+    GameTooltip:AddLine("Every listed uncommon, rare and epic weapon and armor piece, plus the enchanting "
+      .. "materials. Results: Professions tab, Disenchanting.", 1, 1, 1, true)
+    GameTooltip:Show()
+  end)
+  deBtn:SetScript("OnLeave", GameTooltip_Hide)
+  scanButtons[#scanButtons + 1] = deBtn
   local watchBtn = Button(ahPanel, "Start watch", 162, function() ns:ToggleWatch() end)
-  watchBtn:SetPoint("TOP", prev, "BOTTOM", 0, -10)
+  watchBtn:SetPoint("TOP", deBtn, "BOTTOM", 0, -10)
   local openBtn = Button(ahPanel, "Open window", 162, function() ns:ToggleWindow() end)
   openBtn:SetPoint("TOP", watchBtn, "BOTTOM", 0, -4)
 

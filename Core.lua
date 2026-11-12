@@ -72,6 +72,7 @@ function ns:ADDON_LOADED(name)
   db.watchEvents = db.watchEvents or {}
   db.coverage = db.coverage or {}
   db.daily = db.daily or {}
+  db.deScan = db.deScan or {}     -- [auction house] = newest Disenchant scan (see Scanner.lua, Disenchant.lua)
   db.vendor = db.vendor or {}     -- [itemID] = vendor buy price per unit, learned from merchant windows
   db.names = db.names or {}
   db.captured = db.captured or {} -- [profession] = { [recipeID] = recipe }, see Recipes.lua
@@ -304,6 +305,7 @@ local HELP = {
   "/pscan fdeep - focused scan (deep)",
   "/pscan fadd <item link or ID> - add an item to / remove it from the focused scan list",
   "/pscan fclear - empty the focused scan list (asks first)",
+  "/pscan descan - Disenchant scan: all listed uncommon/rare/epic gear plus enchanting materials",
   "/pscan stop - stop the running scan (what was scanned so far is kept)",
   "/pscan watch - start or stop watch mode (order book polling of the focus list)",
   "/pscan focus <item link or ID> - add an item to / remove it from the focus list",
@@ -383,6 +385,8 @@ SlashCmdList.PROFSCAN = function(msg)
     ns:StartScan(true, true)
   elseif cmd == "fadd" and itemArg then
     ns:ToggleFocusScan(itemArg)
+  elseif cmd == "descan" then
+    ns:StartScan(true, "disenchant")
   elseif cmd == "fclear" then
     ns:ConfirmClearFocusScan()
   elseif cmd == "stop" then

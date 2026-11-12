@@ -485,6 +485,12 @@ function ns.UI.BuildRecipesPage(page)
     refresh()
   end)
   tradeButton:SetPoint("TOPLEFT", 0, 0)
+  local DISENCHANT = "__disenchant" -- state.profName when the disenchanting pane is shown
+  local deButton = UI.Button(left, "|cffa335eeDisenchanting|r", 126, function()
+    state.profName = DISENCHANT
+    refresh()
+  end)
+  deButton:SetPoint("TOPLEFT", 0, -22)
   local profButtons = {}
   local settingsButton -- placed under the profession list, see below
   for i = 1, MAX_PROFESSIONS do
@@ -492,13 +498,13 @@ function ns.UI.BuildRecipesPage(page)
       state.profName, state.cat = self.profName, 0
       refresh()
     end)
-    b:SetPoint("TOPLEFT", 0, -i * 22)
+    b:SetPoint("TOPLEFT", 0, -(i + 1) * 22)
     b:Hide()
     profButtons[i] = b
   end
 
   settingsButton = UI.Button(left, "Craft settings...", 126, function(self) UI.ToggleCraftSettings(self) end)
-  settingsButton:SetPoint("TOPLEFT", 0, -(MAX_PROFESSIONS + 1) * 22 - 6)
+  settingsButton:SetPoint("TOPLEFT", 0, -(MAX_PROFESSIONS + 2) * 22 - 6)
   settingsButton:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
     GameTooltip:SetText("Craft settings")
@@ -533,6 +539,7 @@ function ns.UI.BuildRecipesPage(page)
   right:SetPoint("TOPLEFT", 134, 0)
   right:SetPoint("BOTTOMRIGHT")
   local trade = UI.BuildTradePane(page) -- crates and writs (TradeUI.lua)
+  local disenchant = UI.BuildDisenchantPane(page) -- disenchant bands (DisenchantUI.lua)
 
   local catButton = UI.Button(right, "All categories", 190, nil)
   catButton:SetPoint("TOPLEFT", 0, 0)
@@ -752,11 +759,14 @@ function ns.UI.BuildRecipesPage(page)
     end
     state.prof = prof
     wipe(shown)
-    local showTrade = state.profName == TRADE
+    local showTrade, showDE = state.profName == TRADE, state.profName == DISENCHANT
     if showTrade then tradeButton:LockHighlight() else tradeButton:UnlockHighlight() end
-    right:SetShown(not showTrade)
+    if showDE then deButton:LockHighlight() else deButton:UnlockHighlight() end
+    right:SetShown(not (showTrade or showDE))
     trade.frame:SetShown(showTrade)
+    disenchant.frame:SetShown(showDE)
     if showTrade then return trade.refresh() end
+    if showDE then return disenchant.refresh() end
     if not prof then
       list:SetData({})
       return
