@@ -15,6 +15,13 @@ local _, ns = ...
   and units sold per day (watch mode, or "~" = Blizzard API estimate).
   "Max AH/h" and "Max vend/h": the best margin per hour of crafting over every
   route (each reagent bought or crafted), as in the recipe view's routes.
+  Tags after the name say what limits a recipe (RecipeLocks.lua): orange "cd"
+  cooldown, blue crafting station, purple specialization, yellow reputation
+  ("TB Hon"); hover for details. Craft settings can switch each off, which
+  hides those recipes here and keeps them out of crafting trees.
+  "Goal +__g" (per profession): every recipe is priced for the crafts it takes
+  to earn that much (Pricing.lua GoalCrafts; "Crafts" column, totals on hover),
+  and recipes that can't earn it are hidden. Empty = all recipes, usual batch.
   Click a recipe: recipe view. Right-click: add its items to the scan list.
   Shift-click: link the product.
 
@@ -106,6 +113,39 @@ local function BestPerHour(recipe, e)
     routeCache[key] = cached
   end
   return cached or nil
+end
+
+-- Tooltip lines for the profit goal: what reaching it takes with this recipe.
+local function GoalLines(recipe, e, goal, sold, soldVia, lines)
+  if not goal or recipe.item <= 0 then return lines end
+  local margin = e.marginAH and e.marginVendor and math.max(e.marginAH, e.marginVendor) or e.marginAH or e.marginVendor
+  local out = {}
+  if margin and margin > 0 then
+    local items = math.floor(e.batch * e.yield + 0.5)
+    local via = (e.marginAH and margin == e.marginAH) and "on the AH" or "to a vendor"
+    out[#out + 1] = ("|cffffd100Goal +%s:|r %d crafts (%d items) sold %s earn %s"):format(
+      ns.ShortMoney(goal), e.batch, items, via, ns.Money(math.floor(margin * e.batch)))
+    out[#out + 1] = ("Reagents for all of them: %s%s"):format(ns.Money(math.floor(e.cost * e.batch)),
+      e.short and " |cffff6060(more than the known listings)|r" or "")
+    local t = e.timing
+    if t and t.cooldown then
+      out[#out + 1] = ("Cooldown %s: %d crafts take ~%s"):format(ns.Duration(t.cooldown), e.batch,
+        ns.UI.Seconds((e.batch - 1) * t.cooldown))
+    elseif t then
+      out[#out + 1] = ("Crafting time ~%s"):format(ns.UI.Seconds(e.batch * t.seconds))
+    end
+    if via == "on the AH" and sold then
+      out[#out + 1] = ("Market buys %s/day: selling them takes ~%s"):format(ns.SoldText(sold, soldVia),
+        sold > 0 and ns.UI.Seconds(items / sold * 86400) or "forever")
+    end
+    if e.batchWhy == "set by you" then
+      out[#out + 1] = "|cffaaaaaaPriced for your own batch size for this recipe, not the goal.|r"
+    end
+  else
+    out[#out + 1] = ("|cffff6060Can't earn the +%s goal|r"):format(ns.ShortMoney(goal))
+  end
+  for _, line in ipairs(lines) do out[#out + 1] = line end
+  return out
 end
 
 -- Cell for a best-per-hour route: "cd" for cooldowns, "?" when the cast time is
@@ -236,7 +276,111 @@ local function BuildCraftSettings()
   knownLabel:SetWidth(280)
   knownLabel:SetText("Only recipes one of my characters has learned")
   panel.knownOnly = knownOnly
-  panel:SetHeight(96 + rows * 22 + 34)
+  local leftHeight = 96 + rows * 22 + 34
+
+  -- Locked recipes (right column) -------------------------------------------------------
+  -- checked = shown and used; unchecked = left out of recipe lists and crafting trees
+  local X = 342
+  local lockChecks = {} -- { box, key } ; key nil for the "this character's standing" option
+  local function LockBox(x, y, text, key, tip)
+    local box = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
+    box:SetSize(20, 20)
+    box:SetPoint("TOPLEFT", x, y)
+    box.key = key
+    box:SetScript("OnClick", function(self)
+      ns.db.settings.lockOff[self.key] = not self:GetChecked() or nil
+      Changed()
+    end)
+    local label = UI.Text(panel, "GameFontHighlightSmall")
+    label:SetPoint("LEFT", box, "RIGHT", 2, 0)
+    label:SetText(text)
+    if tip then
+      box:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetText(text)
+        GameTooltip:AddLine(tip, 1, 1, 1, true)
+        GameTooltip:Show()
+      end)
+      box:SetScript("OnLeave", GameTooltip_Hide)
+    end
+    lockChecks[#lockChecks + 1] = box
+    return box
+  end
+  local function Heading(y, text)
+    local h = UI.Text(panel, "GameFontNormalSmall")
+    h:SetPoint("TOPLEFT", X, y)
+    h:SetText(text)
+    return h
+  end
+
+  local lockTitle = UI.Text(panel, "GameFontNormal")
+  lockTitle:SetPoint("TOPLEFT", X, -12)
+  lockTitle:SetText("Locked recipes")
+  local lockHelp = UI.Text(panel)
+  lockHelp:SetPoint("TOPLEFT", X, -30)
+  lockHelp:SetWidth(300)
+  lockHelp:SetText("Unchecked: hidden from the recipe lists and never crafted in trees. "
+    .. "Recipes your characters know ignore specialization and reputation.")
+
+  local y = -64
+  LockBox(X, y, "Cooldown recipes (transmutes, Mooncloth)", "cd",
+    "Recipes with a cooldown between crafts. They show \"cd\" in the list.")
+  y = y - 24
+  local kinds = ns:LockKinds()
+  Heading(y, "Crafting stations")
+  y = y - 14
+  for i, st in ipairs(kinds.stations) do
+    LockBox(X + ((i - 1) % 2) * 150, y - math.floor((i - 1) / 2) * 20, st.name, "station:" .. st.name,
+      "Recipes crafted next to a " .. st.name .. ". Anvils, forges and cooking fires are everywhere, so they aren't listed.")
+  end
+  y = y - math.ceil(#kinds.stations / 2) * 20 - 6
+  local specHeading = Heading(y, "Specializations (to learn)")
+  local matchSpec = UI.Button(panel, "This character's", 110, function()
+    for _, sp in ipairs(kinds.specs) do
+      local has = sp.spell and IsPlayerSpell and IsPlayerSpell(sp.spell)
+      ns.db.settings.lockOff["spec:" .. sp.name] = not has or nil
+    end
+    Changed()
+  end)
+  matchSpec:SetPoint("LEFT", specHeading, "RIGHT", 10, 0)
+  matchSpec:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    GameTooltip:SetText("This character's specializations")
+    GameTooltip:AddLine("Keeps only the specializations this character has.", 1, 1, 1, true)
+    GameTooltip:Show()
+  end)
+  matchSpec:SetScript("OnLeave", GameTooltip_Hide)
+  y = y - 18
+  for i, sp in ipairs(kinds.specs) do
+    LockBox(X + ((i - 1) % 2) * 150, y - math.floor((i - 1) / 2) * 20, sp.name, "spec:" .. sp.name)
+  end
+  y = y - math.ceil(#kinds.specs / 2) * 20 - 6
+  Heading(y, "Reputation (to buy the recipe)")
+  y = y - 14
+  LockBox(X, y, "Reputation recipes", "rep",
+    "Recipes sold by faction quartermasters (Thorium Brotherhood, Zandalar Tribe, Argent Dawn, ...).")
+  y = y - 20
+  local repMine = LockBox(X, y, "...only where this character has the standing", nil,
+    "Hides reputation recipes this character can't buy yet. Recipes you know always stay.")
+  repMine:SetScript("OnClick", function(self)
+    ns.db.settings.lockRepMine = self:GetChecked() and true or false
+    Changed()
+  end)
+  y = y - 28
+
+  local baseRefresh = Refresh
+  Refresh = function()
+    baseRefresh()
+    local s = ns.db.settings
+    for _, box in ipairs(lockChecks) do
+      if box.key then box:SetChecked(not s.lockOff[box.key]) end
+    end
+    repMine:SetChecked(s.lockRepMine == true)
+    repMine:SetEnabled(not s.lockOff.rep)
+  end
+
+  panel:SetWidth(X + 312)
+  panel:SetHeight(math.max(leftHeight, -y))
   panel.Refresh = Refresh
   return panel
 end
@@ -245,7 +389,8 @@ function ns.UI.ToggleCraftSettings(anchor)
   if not settingsPanel then settingsPanel = BuildCraftSettings() end
   if settingsPanel:IsShown() then return settingsPanel:Hide() end
   settingsPanel:ClearAllPoints()
-  settingsPanel:SetPoint("TOPLEFT", anchor, "TOPRIGHT", 8, 0)
+  -- over the recipe list, so the taller panel stays inside the window
+  settingsPanel:SetPoint("TOPLEFT", ProfScanFrame, "TOPLEFT", 150, -40)
   settingsPanel.Refresh()
   settingsPanel:Show()
 end
@@ -353,6 +498,42 @@ function ns.UI.BuildRecipesPage(page)
   knownLabel:SetPoint("LEFT", known, "RIGHT", 2, 0)
   knownLabel:SetText("Known only")
 
+  -- profit goal for this profession (gold); priced for the crafts it takes, unreachable recipes hidden
+  local goalLabel = UI.Text(right, "GameFontNormalSmall")
+  goalLabel:SetPoint("LEFT", knownLabel, "RIGHT", 18, 0)
+  goalLabel:SetText("Goal +")
+  local goalBox = CreateFrame("EditBox", nil, right, "InputBoxTemplate")
+  goalBox:SetSize(54, 18)
+  goalBox:SetPoint("LEFT", goalLabel, "RIGHT", 6, 0)
+  goalBox:SetAutoFocus(false)
+  goalBox:SetNumeric(true)
+  goalBox:SetMaxLetters(6)
+  local goalUnit = UI.Text(right, "GameFontNormalSmall")
+  goalUnit:SetPoint("LEFT", goalBox, "RIGHT", 2, 0)
+  goalUnit:SetText("g")
+  local function ApplyGoal()
+    if state.prof then
+      local gold = tonumber(goalBox:GetText())
+      ns:SetProfitGoal(state.prof.name, gold and gold * 10000 or nil)
+    end
+    goalBox:ClearFocus()
+    refresh()
+  end
+  goalBox:SetScript("OnEnterPressed", ApplyGoal)
+  goalBox:SetScript("OnEscapePressed", function(self)
+    self:ClearFocus()
+    refresh() -- back to the stored goal
+  end)
+  goalBox:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_TOP")
+    GameTooltip:SetText("Profit goal for this profession")
+    GameTooltip:AddLine("Gold you want to earn. Each recipe is then priced for the crafts it takes to earn it "
+      .. "(buying that many crafts' reagents walks up the price levels), and recipes that can't earn it "
+      .. "are hidden. Empty or 0 = off: all recipes, priced for the usual batch. Press Enter to set.", 1, 1, 1, true)
+    GameTooltip:Show()
+  end)
+  goalBox:SetScript("OnLeave", GameTooltip_Hide)
+
   -- margins per craft or per hour of crafting
   local perHour = UI.Button(right, "Per craft", 90, function(self)
     state.perHour = not state.perHour
@@ -373,6 +554,7 @@ function ns.UI.BuildRecipesPage(page)
   local list = UI.CreateTable(right, {
     { title = "Recipe", width = 212, key = "name" },
     { title = "Skill", width = 34, justify = "RIGHT", key = "skill" },
+    { title = "Crafts", width = 46, justify = "RIGHT", key = "crafts" },
     { title = "Reagents", width = 76, justify = "RIGHT", key = "cost" },
     { title = "AH margin", width = 84, justify = "RIGHT", key = "margin" },
     { title = "AH %", width = 44, justify = "RIGHT", key = "pct" },
@@ -383,25 +565,31 @@ function ns.UI.BuildRecipesPage(page)
     { title = "Max vend/h", width = 74, justify = "RIGHT", key = "maxVendor" },
   }, ROWS)
   -- column tips for the best-route columns
+  local HOUR_NOTE = "\"cd\" = cooldown recipe, \"?\" = cast time unknown, grey \"~\" = some crafted "
+    .. "reagent's cast time unknown. Click to sort."
   for i, tip in pairs({
-    [9] = "Best AH margin per hour over every crafting route: each reagent bought or crafted, "
-      .. "whichever earns the most per hour of crafting (the recipe view's \"Best AH margin/hour\" route).",
-    [10] = "Best vendor margin per hour over every crafting route: each reagent bought or crafted, "
-      .. "whichever earns the most per hour of crafting (the recipe view's \"Best vendor margin/hour\" route).",
+    [3] = { "Crafts the row is priced for: reagents are bought for this many crafts at once, walking up "
+      .. "the price levels. With a goal: the crafts it takes to earn it. Otherwise the batch size "
+      .. "(one stack by default; /pscan batch, or per recipe in the recipe view).", "Click to sort." },
+    [10] = { "Best AH margin per hour over every crafting route: each reagent bought or crafted, "
+      .. "whichever earns the most per hour of crafting (the recipe view's \"Best AH margin/hour\" route).", HOUR_NOTE },
+    [11] = { "Best vendor margin per hour over every crafting route: each reagent bought or crafted, "
+      .. "whichever earns the most per hour of crafting (the recipe view's \"Best vendor margin/hour\" route).", HOUR_NOTE },
   }) do
     local header = list.titles[i]:GetParent()
     header:SetScript("OnEnter", function(self)
       GameTooltip:SetOwner(self, "ANCHOR_TOP")
       GameTooltip:SetText(list.titles[i]:GetText())
-      GameTooltip:AddLine(tip, 1, 1, 1, true)
-      GameTooltip:AddLine("\"cd\" = cooldown recipe, \"?\" = cast time unknown, grey \"~\" = some crafted "
-        .. "reagent's cast time unknown. Click to sort.", 0.7, 0.7, 0.7, true)
+      GameTooltip:AddLine(tip[1], 1, 1, 1, true)
+      GameTooltip:AddLine(tip[2], 0.7, 0.7, 0.7, true)
       GameTooltip:Show()
     end)
     header:SetScript("OnLeave", GameTooltip_Hide)
   end
   list:SetPoint("TOPLEFT", 0, -26)
   list.emptyText = "No recipes match."
+  local hiddenText = UI.Text(right, "GameFontDisableSmall")
+  hiddenText:SetPoint("BOTTOMRIGHT", list, "BOTTOMRIGHT", -4, 0)
   list.onSort = function(key)
     if state.sortKey == key then state.sortDesc = not state.sortDesc else state.sortKey, state.sortDesc = key, key ~= "name" end
     refresh()
@@ -454,13 +642,24 @@ function ns.UI.BuildRecipesPage(page)
     catButton:SetText(state.cat == 0 and "All categories" or prof.categories[state.cat].name)
 
     local text = filter:GetText():lower()
-    local rows, seen = {}, {}
+    local rows, seen, hidden, unreachable = {}, {}, 0, 0
+    local goal = ns:ProfitGoal(prof.name)
     for ci, cat in ipairs(prof.categories) do
       if state.cat == 0 or state.cat == ci then
         for _, recipe in ipairs(cat.recipes) do
           local key = RecipeKey(recipe)
           local name = ns:RecipeName(recipe)
           local isKnown = recipe.spell > 0 and ns:IsKnown(recipe.spell)
+          local allowed = ns:LockAllowed(recipe) -- craft settings: locked recipes switched off
+          if not allowed and not seen[key] then
+            seen[key] = true
+            hidden = hidden + 1
+          end
+          -- with a goal, only recipes that can earn it (GoalCrafts false = no positive margin at that size)
+          if goal and not seen[key] and ns:GoalCrafts(recipe) == false then
+            seen[key] = true
+            unreachable = unreachable + 1
+          end
           if not seen[key]
               and (text == "" or name:lower():find(text, 1, true))
               and (not state.knownOnly or recipe.gathered or isKnown) then
@@ -480,9 +679,11 @@ function ns.UI.BuildRecipesPage(page)
               spell = recipe.item == 0 and recipe.spell > 0 and recipe.spell or nil,
               icon = icon,
               recipe = recipe,
+              tooltipLines = GoalLines(recipe, e, goal, sold, soldVia, ns:LockLines(recipe)),
               sort = {
                 name = name,
                 skill = recipe.skill,
+                crafts = e.batch,
                 cost = e.complete and e.cost or -1,
                 margin = (state.perHour and e.ahPerHour or not state.perHour and e.marginAH) or -1e12,
                 pct = e.pctAH or -1e12,
@@ -494,8 +695,10 @@ function ns.UI.BuildRecipesPage(page)
               },
               cells = {
                 (isKnown and "|cff40ff40[K]|r " or "") .. name
-                  .. (ns.YieldText(recipe) ~= "" and (" |cffaaaaaa" .. ns.YieldText(recipe) .. "|r") or ""),
+                  .. (ns.YieldText(recipe) ~= "" and (" |cffaaaaaa" .. ns.YieldText(recipe) .. "|r") or "")
+                  .. (ns:RecipeLock(recipe) and ("  " .. ns:LockTags(recipe)) or ""),
                 recipe.skill > 0 and recipe.skill or "",
+                (e.batchWhy and e.batchWhy:find("goal") and "|cffffd100%d|r" or "%d"):format(e.batch),
                 CostText(recipe, e),
                 state.perHour and PerHourText(e, e.ahPerHour) or SignedMoney(e.marginAH),
                 MarginPct(e.pctAH),
@@ -512,9 +715,19 @@ function ns.UI.BuildRecipesPage(page)
     end
     UI.SortRows(rows, state.sortKey, state.sortDesc)
     perHour:SetText(state.perHour and "Per hour" or "Per craft")
-    list.titles[4]:SetText(state.perHour and "AH /hour" or "AH margin")
-    list.titles[6]:SetText(state.perHour and "Vendor /hour" or "Vendor margin")
+    list.titles[5]:SetText(state.perHour and "AH /hour" or "AH margin")
+    list.titles[7]:SetText(state.perHour and "Vendor /hour" or "Vendor margin")
+    list.titles[3]:SetText(goal and "|cffffd100Crafts|r" or "Crafts")
+    if not goalBox:HasFocus() then goalBox:SetText(goal and tostring(math.floor(goal / 10000)) or "") end
     list:SetData(rows)
+    local notes = {}
+    if unreachable > 0 then
+      notes[#notes + 1] = ("%d can't earn the +%s goal"):format(unreachable, ns.ShortMoney(goal))
+    end
+    if hidden > 0 then
+      notes[#notes + 1] = ("%d locked hidden (Craft settings...)"):format(hidden)
+    end
+    hiddenText:SetText(table.concat(notes, ",  "))
 
     local hasKnown = ns.db.known[UnitName("player") .. "-" .. GetRealmName()] ~= nil
     known:SetEnabled(hasKnown)

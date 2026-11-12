@@ -22,7 +22,7 @@ local _, ns = ...
   at most twice a second while it is open.
 ]]
 
-local WIDTH, HEIGHT = 930, 540
+local WIDTH, HEIGHT = 980, 540
 local ROW_H = 18
 local PRICE_ROWS = 19
 local WATCH_ROWS = 8

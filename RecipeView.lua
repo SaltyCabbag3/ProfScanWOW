@@ -184,6 +184,14 @@ function ns.UI.BuildRecipeView(frame)
   yieldLabel:SetText("Items per craft")
   local yieldSource = UI.Text(frame, "GameFontDisableSmall", "RIGHT")
   yieldSource:SetPoint("RIGHT", yieldLabel, "LEFT", -8, 0)
+
+  -- what limits this recipe besides skill (RecipeLocks.lua): cooldown, station, tools, learning
+  local locks = UI.Text(frame, "GameFontHighlightSmall")
+  locks:SetPoint("TOPLEFT", 0, -38)
+  locks:SetPoint("RIGHT", yieldSource, "LEFT", -12, 0)
+  locks:SetHeight(22)
+  locks:SetJustifyV("TOP")
+  locks:SetWordWrap(true)
   local yieldWidgets = { yieldReset, yieldSet, yieldMax, yieldMin, yieldDash, yieldLabel, yieldSource }
 
   -- Summary ------------------------------------------------------------------------------
@@ -370,6 +378,7 @@ function ns.UI.BuildRecipeView(frame)
     if recipe.skill > 0 then parts[#parts + 1] = "skill " .. recipe.skill end
     if recipe.spell > 0 and ns:IsKnown(recipe.spell) then parts[#parts + 1] = "|cff40ff40known|r" end
     sub:SetText(table.concat(parts, "  -  "))
+    locks:SetText(table.concat(ns:LockLines(recipe, true), "     "))
     product:SetShown(recipe.item > 0)
     for _, w in ipairs(yieldWidgets) do w:SetShown(recipe.item > 0 and recipe.spell > 0) end
     if not yieldMin:HasFocus() then yieldMin:SetText(recipe.yieldMin or 1) end

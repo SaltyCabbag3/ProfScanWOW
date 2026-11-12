@@ -3,6 +3,9 @@ __pycache__/
 *.pyc
 .venv/
 
+# Game tables downloaded by tools/build_locks.py
+tools/.db2cache/
+
 # Local data (the tools keep these in Documents/ProfScan by default)
 *.db
 *.db-journal

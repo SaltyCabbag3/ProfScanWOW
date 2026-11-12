@@ -8,6 +8,7 @@
 
 Items.lua
 RecipeData.lua
+RecipeLocks.lua
 TradeData.lua
 ImportedPrices.lua
 Core.lua

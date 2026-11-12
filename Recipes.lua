@@ -261,7 +261,138 @@ function ns:CanUseRecipe(recipe)
   local s = self.db.settings
   if recipe.profession and s.craftUse[recipe.profession] == false then return false end
   if s.craftKnownOnly and recipe.spell > 0 and not self:KnownByAnyCharacter(recipe.spell) then return false end
+  if not self:LockAllowed(recipe) then return false end
   return true
+end
+
+-- Locked recipes ------------------------------------------------------------------------------
+-- RecipeLocks.lua (tools/build_locks.py, from the game's tables) says what
+-- limits a recipe besides skill: a cooldown, a crafting station, tools, and for
+-- learning it a specialization or a reputation standing. Anvils, forges and
+-- cooking fires are everywhere, so they and tools are only shown as info.
+-- Craft settings can switch each kind of lock off (settings.lockOff): such
+-- recipes leave the recipe lists and crafting trees. Specialization and
+-- reputation only limit learning, so recipes one of your characters already
+-- knows ignore them.
+
+local COMMON_STATIONS = { Anvil = true, Forge = true, ["Cooking Fire"] = true }
+ns.STANDING_NAMES = { [4] = "Neutral", [5] = "Friendly", [6] = "Honored", [7] = "Revered", [8] = "Exalted" }
+local STANDING_SHORT = { [5] = "Fri", [6] = "Hon", [7] = "Rev", [8] = "Ex" }
+local FACTION_SHORT = {
+  ["Argent Dawn"] = "AD", ["Cenarion Circle"] = "CC", ["Hydraxian Waterlords"] = "Hydraxian",
+  ["Thorium Brotherhood"] = "TB", ["Timbermaw Hold"] = "Timbermaw", ["Zandalar Tribe"] = "Zandalar",
+}
+local SPEC_SHORT = {
+  ["Armorsmith"] = "Armorsmith", ["Weaponsmith"] = "Weaponsmith", ["Master Axesmith"] = "Axesmith",
+  ["Master Hammersmith"] = "Hammersmith", ["Master Swordsmith"] = "Swordsmith",
+  ["Dragonscale Leatherworking"] = "Dragonscale", ["Elemental Leatherworking"] = "Elemental",
+  ["Tribal Leatherworking"] = "Tribal", ["Gnomish Engineer"] = "Gnomish", ["Goblin Engineer"] = "Goblin",
+}
+
+function ns:RecipeLock(recipe)
+  return recipe and recipe.spell > 0 and ns.RECIPE_LOCKS and ns.RECIPE_LOCKS[recipe.spell] or nil
+end
+
+-- Stations and specializations that occur, for the craft settings: { { name =, spell = }, ... } sorted.
+function ns:LockKinds()
+  if self.lockKinds then return self.lockKinds end
+  local stations, specs, seenStation, seenSpec = {}, {}, {}, {}
+  for _, l in pairs(ns.RECIPE_LOCKS or {}) do
+    if l.station and not COMMON_STATIONS[l.station] and not seenStation[l.station] then
+      seenStation[l.station] = true
+      stations[#stations + 1] = { name = l.station }
+    end
+    if l.spec and not seenSpec[l.spec] then
+      seenSpec[l.spec] = true
+      specs[#specs + 1] = { name = l.spec, spell = l.specSpell }
+    end
+  end
+  local byName = function(a, b) return a.name < b.name end
+  table.sort(stations, byName)
+  table.sort(specs, byName)
+  self.lockKinds = { stations = stations, specs = specs }
+  return self.lockKinds
+end
+
+-- Does this character have at least `standing` (5 Friendly .. 8 Exalted) with the faction?
+-- nil when the game can't tell.
+function ns:HasStanding(factionID, standing)
+  local current
+  if C_Reputation and C_Reputation.GetFactionDataByID then
+    local ok, data = pcall(C_Reputation.GetFactionDataByID, factionID)
+    if ok then
+      if not data then return false end -- never met them: neutral at best
+      current = data.reaction
+    end
+  end
+  if not current and GetFactionInfoByID then
+    local ok, name, _, standingID = pcall(GetFactionInfoByID, factionID)
+    if ok then
+      if not name then return false end
+      current = standingID
+    end
+  end
+  if not current then return nil end
+  return current >= standing
+end
+
+-- Is the recipe allowed by the lock settings?
+function ns:LockAllowed(recipe)
+  local l = self:RecipeLock(recipe)
+  if not l then return true end
+  local s = self.db.settings
+  local off = s.lockOff
+  if l.cd and off.cd then return false end
+  if l.station and not COMMON_STATIONS[l.station] and off["station:" .. l.station] then return false end
+  if (l.spec or l.rep) and not self:KnownByAnyCharacter(recipe.spell) then
+    if l.spec and off["spec:" .. l.spec] then return false end
+    if l.rep then
+      if off.rep then return false end
+      if s.lockRepMine and self:HasStanding(l.repID, l.standing) == false then return false end
+    end
+  end
+  return true
+end
+
+-- Short coloured tags for the recipe list ("cd", "Black Anvil", "Armorsmith", "TB Hon").
+function ns:LockTags(recipe)
+  local l = self:RecipeLock(recipe)
+  if not l then return "" end
+  local tags = {}
+  if l.cd then tags[#tags + 1] = "|cffff9933cd|r" end
+  if l.station and not COMMON_STATIONS[l.station] then tags[#tags + 1] = "|cff66ccff" .. l.station .. "|r" end
+  if l.spec then tags[#tags + 1] = "|cffcc99ff" .. (SPEC_SHORT[l.spec] or l.spec) .. "|r" end
+  if l.rep then
+    tags[#tags + 1] = ("|cffffd100%s %s|r"):format(FACTION_SHORT[l.rep] or l.rep, STANDING_SHORT[l.standing] or "")
+  end
+  return table.concat(tags, " ")
+end
+
+-- Full explanation lines (tooltips, recipe view). withInfo adds common stations and tools.
+function ns:LockLines(recipe, withInfo)
+  local l = self:RecipeLock(recipe)
+  local lines = {}
+  if not l then return lines end
+  local known = recipe.spell > 0 and self:KnownByAnyCharacter(recipe.spell)
+  if l.cd then lines[#lines + 1] = "|cffff9933Cooldown " .. ns.Duration(l.cd) .. "|r between crafts" end
+  if l.station and (withInfo or not COMMON_STATIONS[l.station]) then
+    lines[#lines + 1] = "Crafted at: |cff66ccff" .. l.station .. "|r"
+  end
+  if withInfo and l.tools then lines[#lines + 1] = "Tools: " .. l.tools end
+  if l.spec then
+    lines[#lines + 1] = ("Learned only by |cffcc99ff%s|r%s%s"):format(l.spec,
+      l.trainer and " (specialization trainer; list from Classic)" or "", known and " - |cff40ff40known|r" or "")
+  end
+  if l.rep then
+    local has = self:HasStanding(l.repID, l.standing)
+    lines[#lines + 1] = ("Needs |cffffd100%s %s|r to buy%s"):format(l.rep, ns.STANDING_NAMES[l.standing] or "?",
+      known and " - |cff40ff40known|r" or has == true and " - |cff40ff40you have it|r"
+      or has == false and " - |cffff6060not yet on this character|r" or "")
+  end
+  if not self:LockAllowed(recipe) then
+    lines[#lines + 1] = "|cffff6060Left out by your craft settings|r (not crafted in trees)"
+  end
+  return lines
 end
 
 -- Professions any of your characters has (seen in their profession windows), plus this character's.

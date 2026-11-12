@@ -45,6 +45,11 @@ local DEFAULTS = {
   -- which crafts ProfScan may suggest in crafting trees, routes and cheapest ways
   craftUse = {},           -- [profession] = false: never suggest crafting with it
   craftKnownOnly = false,  -- only suggest recipes one of your characters has learned
+  -- locked recipes (RecipeLocks.lua): [key] = true leaves them out of lists and crafting trees;
+  -- keys "cd", "station:<name>", "spec:<name>", "rep"
+  lockOff = {},
+  lockRepMine = false,     -- reputation recipes only where this character has the standing
+  profitGoal = {},         -- [profession] = copper to earn: recipes are priced for the crafts it takes
 }
 
 -- Marks the window as needing a redraw (UI.lua checks this flag).

@@ -129,6 +129,8 @@ end
 function ns:BatchCrafts(recipe)
   local own = recipe.spell > 0 and self.db.batchOverride[recipe.spell]
   if own then return own, "set by you" end
+  local goalCrafts = self:GoalCrafts(recipe)
+  if goalCrafts then return goalCrafts, ("+%s goal"):format(ns.ShortMoney(self:ProfitGoal(recipe.profession))) end
   local default = self.db.settings.batchCrafts
   if type(default) == "number" then return default, "your default" end
   if recipe.item > 0 then
@@ -138,6 +140,62 @@ function ns:BatchCrafts(recipe)
     end
   end
   return 1, "doesn't stack"
+end
+
+-- Profit goal per profession ---------------------------------------------------------------
+-- settings.profitGoal[profession] = copper you want to earn with that
+-- profession (0/nil = off). With a goal, a recipe is priced for the crafts it
+-- takes to earn it: crafts = goal / margin per craft, where the margin (the
+-- better of AH and vendor) is itself worked out for that many crafts, since
+-- buying more reagents walks up the price levels. Repeated until it settles.
+-- GoalCrafts returns the crafts, false when the recipe can't reach the goal
+-- (no margin, or the margin vanishes as the batch grows), nil without a goal.
+
+local GOAL_MAX_CRAFTS = 5000
+local goalCache, goalGen = {}, -1
+
+function ns:ProfitGoal(profession)
+  local goal = profession and self.db.settings.profitGoal[profession]
+  return goal and goal > 0 and goal or nil
+end
+
+function ns:SetProfitGoal(profession, copper)
+  self.db.settings.profitGoal[profession] = copper and copper > 0 and math.floor(copper) or nil
+  self:NotifyChanged()
+end
+
+local function BestMargin(e)
+  local a, v = e.marginAH, e.marginVendor
+  if a and v then return math.max(a, v) end
+  return a or v
+end
+
+function ns:GoalCrafts(recipe)
+  local goal = self:ProfitGoal(recipe.profession)
+  if not goal or recipe.gathered or recipe.bundle then return nil end
+  if goalGen ~= self.changeGen then
+    wipe(goalCache)
+    goalGen = self.changeGen
+  end
+  local cached = goalCache[recipe]
+  if cached ~= nil then return cached end
+  local n, result = 1, false
+  for _ = 1, 20 do
+    local margin = BestMargin(self:RecipeEconomics(recipe, n))
+    if not margin or margin <= 0 then break end -- can't reach it (at this size)
+    local need = math.ceil(goal / margin)
+    if need <= n then
+      result = n
+      break
+    end
+    if n >= GOAL_MAX_CRAFTS then
+      result = GOAL_MAX_CRAFTS
+      break
+    end
+    n = math.min(need, GOAL_MAX_CRAFTS)
+  end
+  goalCache[recipe] = result
+  return result
 end
 
 function ns:SetBatchOverride(spell, crafts)
@@ -163,9 +221,13 @@ end
 -- Reagents are priced for a whole batch (see BatchCrafts): buying 6 crafts'
 -- worth walks further up the price levels than buying one. e.short / e.nodepth
 -- say whether some reagent ran out of known listings / had no price levels.
-function ns:RecipeEconomics(recipe)
+function ns:RecipeEconomics(recipe, batch) -- batch: crafts to price for (default BatchCrafts)
   local e = { cost = 0, missing = 0, yield = ns.Yield(recipe) }
-  e.batch, e.batchWhy = self:BatchCrafts(recipe)
+  if batch then
+    e.batch, e.batchWhy = batch, "given"
+  else
+    e.batch, e.batchWhy = self:BatchCrafts(recipe)
+  end
   for _, reagent in ipairs(recipe.reagents) do
     local price, _, _, flag = self:BuyPrice(reagent[1], reagent[2] * e.batch)
     if price then e.cost = e.cost + price * reagent[2] else e.missing = e.missing + 1 end
