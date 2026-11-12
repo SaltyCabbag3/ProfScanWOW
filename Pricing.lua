@@ -254,11 +254,14 @@ function ns:SetProfitGoal(profession, copper)
   self:NotifyChanged()
 end
 
-local function BestMargin(e)
-  local a, v = e.marginAH, e.marginVendor
-  if a and v then return math.max(a, v) end
-  return a or v
+local function BestMargin(e) -- selling on the AH, to a vendor, or disenchanting
+  local best
+  for _, m in ipairs({ e.marginAH or false, e.marginVendor or false, e.marginDE or false }) do
+    if m and (not best or m > best) then best = m end
+  end
+  return best
 end
+ns.BestMargin = BestMargin
 
 function ns:GoalCrafts(recipe)
   local goal = self:ProfitGoal(recipe.profession)
@@ -343,11 +346,21 @@ function ns:RecipeEconomics(recipe, batch) -- batch: crafts to price for (defaul
     e.marginVendor = math.floor(e.vendorSell * e.yield) - e.cost
     e.pctVendor = e.cost > 0 and e.marginVendor / e.cost or nil
   end
+  -- disenchanting the product instead of selling it (Disenchant.lua)
+  if recipe.item > 0 then e.deUnit, e.deComplete = self:DisenchantItemValue(recipe.item) end
+  if e.complete and e.deUnit then
+    e.marginDE = math.floor(e.deUnit * e.yield) - e.cost
+    e.pctDE = e.cost > 0 and e.marginDE / e.cost or nil
+  end
   e.timing = self:CraftTiming(recipe)
   local perHour = e.timing and e.timing.perHour
   if perHour then
     e.ahPerHour = e.marginAH and e.marginAH * perHour
     e.vendorPerHour = e.marginVendor and e.marginVendor * perHour
+    if e.marginDE then -- each item made is also disenchanted
+      local de = self:DisenchantCastTime() or 0
+      e.dePerHour = e.marginDE * 3600 / (e.timing.seconds + e.yield * de)
+    end
   end
   return e
 end

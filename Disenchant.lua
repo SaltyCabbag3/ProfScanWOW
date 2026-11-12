@@ -165,6 +165,44 @@ function ns:DisenchantTooltip(id, link)
   return "Disenchant (avg)", (band.assumed and "~" or "") .. ns.Money(value) .. (complete and "" or " |cffff8080*|r")
 end
 
+-- Average disenchant value of one item: value (copper), complete, band; nil when the item
+-- doesn't disenchant (or the game hasn't loaded its details yet). Cached until something changes.
+local itemCache = { gen = -1 }
+function ns:DisenchantItemValue(id)
+  if itemCache.gen ~= self.changeGen or itemCache.ah ~= self.ahKey then
+    wipe(itemCache)
+    itemCache.gen, itemCache.ah = self.changeGen, self.ahKey
+  end
+  local c = itemCache[id]
+  if c == nil then
+    c = false
+    local _, _, quality, ilvl = ns.GetItemInfo(id)
+    if quality and quality >= 2 and quality <= 4 then
+      local band = self:DisenchantBand(id, quality, ilvl)
+      if band then
+        local value, complete = self:DisenchantBandValue(band)
+        if value > 0 then c = { value, complete, band } end
+      end
+    elseif not quality then
+      return nil -- details not loaded yet: don't cache, ask again next time
+    end
+    itemCache[id] = c
+  end
+  if c then return c[1], c[2], c[3] end
+end
+
+-- Seconds one Disenchant takes (the game's cast time; nil if unknown).
+function ns:DisenchantCastTime()
+  local ms
+  if C_Spell and C_Spell.GetSpellInfo then
+    local info = C_Spell.GetSpellInfo(13262)
+    ms = info and info.castTime
+  elseif GetSpellInfo then
+    ms = select(4, GetSpellInfo(13262))
+  end
+  return ms and ms / 1000
+end
+
 -- The newest Disenchant scan on this auction house: { t =, items = { [id] = { m =, n =, l =, q = } } } or nil.
 function ns:DisenchantSnapshot()
   return self.db.deScan[self.ahKey]

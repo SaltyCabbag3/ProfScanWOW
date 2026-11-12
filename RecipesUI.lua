@@ -11,7 +11,8 @@ local _, ns = ...
   character knows. Per recipe: cost of buying the reagents (per craft), the
   margin per craft when selling on the auction house (price after the 5% cut)
   and when selling to a vendor, each = price x items made ("x2" after the
-  name) minus cost, and how sellable the product is: average quantity listed over 7 days
+  name) minus cost; "DE margin" = disenchanting every item made instead
+  (average disenchant value, Disenchant.lua), and how sellable the product is: average quantity listed over 7 days
   and units sold per day (watch mode, or "~" = Blizzard API estimate).
   "Max AH/h" and "Max vend/h": the best margin per hour of crafting over every
   route (each reagent bought or crafted), as in the recipe view's routes.
@@ -120,13 +121,15 @@ end
 -- Tooltip lines for the profit goal: what reaching it takes with this recipe.
 local function GoalLines(recipe, e, goal, sold, soldVia, lines)
   if not goal or recipe.item <= 0 then return lines end
-  local margin = e.marginAH and e.marginVendor and math.max(e.marginAH, e.marginVendor) or e.marginAH or e.marginVendor
+  local margin = ns.BestMargin(e)
   local out = {}
   if margin and margin > 0 then
     local items = math.floor(e.batch * e.yield + 0.5)
-    local via = (e.marginAH and margin == e.marginAH) and "on the AH" or "to a vendor"
-    out[#out + 1] = ("|cffffd100Goal +%s:|r %d crafts (%d items) sold %s earn %s"):format(
-      ns.ShortMoney(goal), e.batch, items, via, ns.Money(math.floor(margin * e.batch)))
+    local via = (e.marginAH and margin == e.marginAH) and "on the AH"
+      or (e.marginVendor and margin == e.marginVendor) and "to a vendor" or "and disenchanted"
+    out[#out + 1] = ("|cffffd100Goal +%s:|r %d crafts (%d items) %s %s earn %s"):format(
+      ns.ShortMoney(goal), e.batch, items, via == "and disenchanted" and "made" or "sold", via,
+      ns.Money(math.floor(margin * e.batch)))
     out[#out + 1] = ("Reagents for all of them: %s%s"):format(ns.Money(math.floor(e.cost * e.batch)),
       e.short and " |cffff6060(more than the known listings)|r" or "")
     local t = e.timing
@@ -687,6 +690,7 @@ function ns.UI.BuildRecipesPage(page)
     { title = "AH margin", width = 84, justify = "RIGHT", key = "margin" },
     { title = "AH %", width = 44, justify = "RIGHT", key = "pct" },
     { title = "Vendor margin", width = 84, justify = "RIGHT", key = "vmargin" },
+    { title = "DE margin", width = 84, justify = "RIGHT", key = "demargin" },
     { title = "Listed", width = 44, justify = "RIGHT", key = "listed" },
     { title = "Sold/d", width = 44, justify = "RIGHT", key = "sold" },
     { title = "Max AH/h", width = 74, justify = "RIGHT", key = "maxAH" },
@@ -699,9 +703,13 @@ function ns.UI.BuildRecipesPage(page)
     [3] = { "Crafts the row is priced for: reagents are bought for this many crafts at once, walking up "
       .. "the price levels. With a goal: the crafts it takes to earn it. Otherwise the batch size "
       .. "(one stack by default; /pscan batch, or per recipe in the recipe view).", "Click to sort." },
-    [10] = { "Best AH margin per hour over every crafting route: each reagent bought or crafted, "
+    [8] = { "Margin if every item made is disenchanted instead of sold: the average value of its "
+      .. "disenchant (materials at their sell price, see Professions > Disenchanting) minus the reagents. "
+      .. "Per hour also counts the Disenchant casts. \"-\" = the product doesn't disenchant (or isn't "
+      .. "loaded yet); * = some materials aren't priced.", "Click to sort." },
+    [11] = { "Best AH margin per hour over every crafting route: each reagent bought or crafted, "
       .. "whichever earns the most per hour of crafting (the recipe view's \"Best AH margin/hour\" route).", HOUR_NOTE },
-    [11] = { "Best vendor margin per hour over every crafting route: each reagent bought or crafted, "
+    [12] = { "Best vendor margin per hour over every crafting route: each reagent bought or crafted, "
       .. "whichever earns the most per hour of crafting (the recipe view's \"Best vendor margin/hour\" route).", HOUR_NOTE },
   }) do
     local header = list.titles[i]:GetParent()
@@ -821,6 +829,7 @@ function ns.UI.BuildRecipesPage(page)
                 margin = (state.perHour and e.ahPerHour or not state.perHour and e.marginAH) or -1e12,
                 pct = e.pctAH or -1e12,
                 vmargin = (state.perHour and e.vendorPerHour or not state.perHour and e.marginVendor) or -1e12,
+                demargin = (state.perHour and e.dePerHour or not state.perHour and e.marginDE) or -1e12,
                 listed = st and st.avgQty or -1,
                 sold = sold or -1,
                 maxAH = bestAH or -1e12,
@@ -836,6 +845,8 @@ function ns.UI.BuildRecipesPage(page)
                 state.perHour and PerHourText(e, e.ahPerHour) or SignedMoney(e.marginAH),
                 MarginPct(e.pctAH),
                 state.perHour and PerHourText(e, e.vendorPerHour) or SignedMoney(e.marginVendor),
+                not e.marginDE and "-" or ((state.perHour and PerHourText(e, e.dePerHour) or SignedMoney(e.marginDE))
+                  .. (e.deComplete and "" or "|cffff8080*|r")),
                 st and ("%d"):format(st.avgQty + 0.5) or "-",
                 ns.SoldText(sold, soldVia),
                 best and BestHourText(e, best.ah) or "-",
@@ -850,6 +861,7 @@ function ns.UI.BuildRecipesPage(page)
     perHour:SetText(state.perHour and "Per hour" or "Per craft")
     list.titles[5]:SetText(state.perHour and "AH /hour" or "AH margin")
     list.titles[7]:SetText(state.perHour and "Vendor /hour" or "Vendor margin")
+    list.titles[8]:SetText(state.perHour and "DE /hour" or "DE margin")
     list.titles[3]:SetText(goal and "|cffffd100Crafts|r" or "Crafts")
     if not goalBox:HasFocus() then goalBox:SetText(goal and tostring(math.floor(goal / 10000)) or "") end
     list:SetData(rows)

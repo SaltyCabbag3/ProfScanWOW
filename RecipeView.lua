@@ -422,8 +422,10 @@ function ns.UI.BuildRecipeView(frame)
           e.yield ~= 1 and (" x %s = %s"):format(Qty(e.yield), ns.Money(revenue)) or "",
           ns.SignedMoney(margin), margin and basis > 0 and (" (%s)"):format(ns.MarginPct(margin / basis)) or "")
       end
-      summary2:SetText(Side("|cffffd100Sell on AH|r (after cut)", e.ahNet) .. "        "
-        .. Side("|cffffd100Sell to vendor|r", e.vendorSell))
+      summary2:SetText(Side("|cffffd100Sell on AH|r (after cut)", e.ahNet) .. "      "
+        .. Side("|cffffd100Sell to vendor|r", e.vendorSell)
+        .. (e.deUnit and ("      " .. Side("|cffffd100Disenchant|r (avg)", e.deUnit)
+          .. (e.deComplete and "" or " |cffff8080*|r")) or ""))
 
       -- per hour of crafting, and how much the market actually takes
       local t = e.timing
@@ -437,8 +439,8 @@ function ns.UI.BuildRecipeView(frame)
         summary3:SetText(("Craft time %.1fs, cooldown %s: per-hour margins don't apply.%s"):format(
           t.cast, ns.Duration(t.cooldown), market))
       else
-        summary3:SetText(("This recipe: %.1fs cast + %.1fs between crafts (%d/hour if every reagent is bought). "
-          .. "Routes below add crafted reagents' time.%s"):format(t.cast, t.seconds - t.cast, t.perHour, market))
+        summary3:SetText(("This recipe: %.1fs cast (%d/hour if every reagent is bought). "
+          .. "Routes below add crafted reagents' time.%s"):format(t.cast, t.perHour, market))
       end
     else
       summary2:SetText("|cffaaaaaaThis recipe makes no item (an enchant or similar), so there is no sale price.|r")
