@@ -537,8 +537,12 @@ end
 
 -- Tooltips -----------------------------------------------------------------------------
 
-local function AddTooltipLines(tooltip, id)
-  if not (id and ns.db and (ns.watched[id] or ns:IsFocusScan(id))) then return end
+local function AddTooltipLines(tooltip, id, link)
+  if not (id and ns.db) then return end
+  -- average disenchant value, for any gear that disenchants (Disenchant.lua)
+  local deLeft, deRight = ns:DisenchantTooltip(id, link)
+  if deLeft then tooltip:AddDoubleLine("ProfScan " .. deLeft:lower(), deRight, 0.2, 1, 0.6, 1, 1, 1) end
+  if not (ns.watched[id] or ns:IsFocusScan(id)) then return end
   local st = ns:GetStats(id, 7)
   if not st then
     tooltip:AddLine("ProfScan: not scanned yet", 0.6, 0.6, 0.6)
@@ -558,13 +562,13 @@ end
 if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall and Enum.TooltipDataType then
   TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, function(tooltip, data)
     if tooltip == GameTooltip or tooltip == ItemRefTooltip then
-      AddTooltipLines(tooltip, data and data.id)
+      AddTooltipLines(tooltip, data and data.id, data and data.hyperlink)
     end
   end)
 else
   local function OnTooltipSetItem(tooltip)
     local _, link = tooltip:GetItem()
-    AddTooltipLines(tooltip, link and tonumber(link:match("item:(%d+)")))
+    AddTooltipLines(tooltip, link and tonumber(link:match("item:(%d+)")), link)
   end
   GameTooltip:HookScript("OnTooltipSetItem", OnTooltipSetItem)
   ItemRefTooltip:HookScript("OnTooltipSetItem", OnTooltipSetItem)

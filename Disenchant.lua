@@ -132,6 +132,39 @@ function ns:DisenchantValue(band)
   return math.floor(value + 0.5), complete, lines
 end
 
+-- DisenchantValue, cached until something changes (tooltips ask often).
+local valueCache = { gen = -1 }
+function ns:DisenchantBandValue(band)
+  if valueCache.gen ~= self.changeGen or valueCache.ah ~= self.ahKey then
+    wipe(valueCache)
+    valueCache.gen, valueCache.ah = self.changeGen, self.ahKey
+  end
+  local v = valueCache[band]
+  if not v then
+    local value, complete = self:DisenchantValue(band)
+    v = { value, complete }
+    valueCache[band] = v
+  end
+  return v[1], v[2]
+end
+
+-- Tooltip line for an item: left text, right text (nil when the item isn't gear that disenchants).
+local GetDetailedItemLevelInfo = C_Item and C_Item.GetDetailedItemLevelInfo or GetDetailedItemLevelInfo
+function ns:DisenchantTooltip(id, link)
+  if not (id and self.DE_BANDS) then return nil end
+  local _, _, quality, ilvl = ns.GetItemInfo(link or id)
+  if not quality or quality < 2 or quality > 4 then return nil end
+  if link and GetDetailedItemLevelInfo then ilvl = GetDetailedItemLevelInfo(link) or ilvl end
+  local _, _, _, _, _, classID = GetItemInfoInstant(id)
+  if classID ~= 2 and classID ~= 4 then return nil end
+  if self.DE_BLOCKED and self.DE_BLOCKED[id] then return "Disenchant", "|cffaaaaaacan't be disenchanted|r" end
+  local band = self:DisenchantBand(id, quality, ilvl)
+  if not band then return nil end
+  local value, complete = self:DisenchantBandValue(band)
+  if value <= 0 then return "Disenchant (avg)", "|cffaaaaaamaterials not priced yet|r" end
+  return "Disenchant (avg)", (band.assumed and "~" or "") .. ns.Money(value) .. (complete and "" or " |cffff8080*|r")
+end
+
 -- The newest Disenchant scan on this auction house: { t =, items = { [id] = { m =, n =, l =, q = } } } or nil.
 function ns:DisenchantSnapshot()
   return self.db.deScan[self.ahKey]
