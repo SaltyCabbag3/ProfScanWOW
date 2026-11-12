@@ -28,12 +28,6 @@ ns.RECIPE_DB = {
       { 25146, 7068, 300, { 7077, 1 }, 3, "Transmute: Elemental Fire" },
     } },
     { name = "Healing/Mana Potions", recipes = {
-      { 17556, 13446, 275, { 13464, 2, 13465, 1, 8925, 1 }, 1, "Major Healing Potion" },
-      { 11457, 3928, 215, { 8838, 1, 3358, 1, 8925, 1 }, 1, "Superior Healing Potion" },
-      { 7181, 1710, 155, { 3357, 1, 3356, 1, 3372, 1 }, 1, "Greater Healing Potion" },
-      { 3447, 929, 110, { 2453, 1, 2450, 1, 3372, 1 }, 1, "Healing Potion" },
-      { 2337, 858, 80, { 118, 1, 2450, 1 }, 1, "Lesser Healing Potion" },
-      { 2330, 118, 1, { 2447, 1, 765, 1, 3371, 1 }, 1, "Minor Healing Potion" },
       { 2332, 2456, 40, { 785, 2, 2447, 1, 3371, 1 }, 1, "Minor Rejuvenation Potion" },
       { 24366, 20002, 275, { 13463, 2, 13464, 1, 8925, 1 }, 1, "Greater Dreamless Sleep Potion" },
       { 11458, 9144, 225, { 8153, 1, 8831, 1, 8925, 1 }, 1, "Wildvine Potion" },
@@ -1472,6 +1466,14 @@ ns.RECIPE_DB = {
       { 23787, 19440, 300, { 19441, 1 }, 1, "Powerful Anti-Venom" },
       { 7935, 6453, 130, { 1288, 1 }, 3, "Strong Anti-Venom" },
       { 7934, 6452, 80, { 1475, 1 }, 3, "Anti-Venom" },
+    } },
+    { name = "Healing Potions", recipes = {
+      { 1244436, 13446, 275, { 8925, 1, 3713, 3, 13464, 1 }, 1, "Major Healing Potion" },
+      { 1244435, 3928, 215, { 8925, 1, 3713, 1, 8838, 1 }, 1, "Superior Healing Potion" },
+      { 1244434, 1710, 155, { 3372, 1, 2692, 3, 3357, 1 }, 1, "Greater Healing Potion" },
+      { 1244433, 929, 110, { 3372, 1, 2692, 1, 2453, 1 }, 1, "Healing Potion" },
+      { 1244432, 858, 80, { 3371, 1, 2678, 2, 2450, 1 }, 1, "Lesser Healing Potion" },
+      { 1244431, 118, 1, { 3371, 1, 2678, 1, 2447, 1 }, 1, "Minor Healing Potion" },
     } },
   } },
   { profession = "Fishing", categories = {
