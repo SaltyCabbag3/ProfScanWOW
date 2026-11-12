@@ -23,6 +23,8 @@ local _, ns = ...
   to earn that much (Pricing.lua GoalCrafts; "Crafts" column, totals on hover),
   and recipes that can't earn it are hidden. Empty = all recipes, usual batch.
   Click a recipe: recipe view. Right-click: add its items to the scan list.
+  Shift-right-click: add its full tree to the focused scan list. "Focus
+  profession" (top row) adds the whole profession that way.
   Shift-click: link the product.
 
   Reagents without any price (never scanned, no vendor seen) make the cost a
@@ -629,6 +631,46 @@ function ns.UI.BuildRecipesPage(page)
   end)
   perHour:SetScript("OnLeave", GameTooltip_Hide)
 
+  -- the whole profession onto the focused scan list: every product, its reagents, and
+  -- the reagents of anything among them that is crafted (as far as Craft settings allow)
+  local function ProfessionItems(prof)
+    local ids, seen = {}, {}
+    local function Add(id)
+      if id and id > 0 and not seen[id] then seen[id], ids[#ids + 1] = true, id end
+    end
+    for _, c in ipairs(prof.categories) do
+      for _, recipe in ipairs(c.recipes) do
+        if recipe.gathered then
+          Add(recipe.item)
+        elseif ns:LockAllowed(recipe) then
+          for _, id in ipairs(ns:RecipeTreeItems(recipe)) do Add(id) end
+        end
+      end
+    end
+    return ids
+  end
+  local focusProf = UI.Button(right, "Focus profession", 130, function()
+    if state.prof then ns:ReportFocusScanAdd(ProfessionItems(state.prof)) end
+  end)
+  focusProf:SetPoint("RIGHT", perHour, "LEFT", -6, 0)
+  focusProf:SetScript("OnEnter", function(self)
+    if not state.prof then return end
+    local n, new = 0, 0
+    for _, id in ipairs(ProfessionItems(state.prof)) do
+      n = n + 1
+      if not ns:IsFocusScan(id) then new = new + 1 end
+    end
+    GameTooltip:SetOwner(self, "ANCHOR_TOP")
+    GameTooltip:SetText(("Add all of %s to the focused scan list"):format(state.prof.name))
+    GameTooltip:AddLine("Every recipe's product and reagents, plus the reagents of reagents you can craft "
+      .. "(bars from ore, cloth from bolts...), down to raw materials. Ignores the category, filter and goal; "
+      .. "recipes hidden in Craft settings are left out.", 1, 1, 1, true)
+    GameTooltip:AddLine(("%d items, %d not on the list yet. Focused scan (quick or deep) then scans only the list."):format(
+      n, new), 0.4, 1, 0.4, true)
+    GameTooltip:Show()
+  end)
+  focusProf:SetScript("OnLeave", GameTooltip_Hide)
+
   -- Right column: recipe list ------------------------------------------------------------
   local list = UI.CreateTable(right, {
     { title = "Recipe", width = 212, key = "name" },
@@ -674,7 +716,9 @@ function ns.UI.BuildRecipesPage(page)
     refresh()
   end
   list.onClick = function(row, button)
-    if button == "RightButton" then
+    if button == "RightButton" and IsShiftKeyDown() then
+      ns:ReportFocusScanAdd(ns:RecipeTreeItems(row.recipe))
+    elseif button == "RightButton" then
       ns:ReportScanAdd(RecipeItems({ row.recipe }))
     elseif IsModifiedClick("CHATLINK") and row.recipe.item > 0 then
       UI.InsertItemLink(row.recipe.item)
