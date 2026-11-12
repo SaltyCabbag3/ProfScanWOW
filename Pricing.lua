@@ -11,6 +11,9 @@ local _, ns = ...
               price a vendor pays (from item info).
   Yield       recipes that make several items per craft (bars, grenades,
               ammo) are costed per craft and earn price x average yield.
+  Bonuses     crafting bonuses you set in Craft settings (settings.bonuses, see
+              ns.BONUSES below): extra results, refunded reagents, vendor
+              discount, extra Merchant's Favor, faster casts.
   Crafting tree  for each reagent that can be crafted, the cheapest recipe
               making it is costed recursively (per item: craft cost / yield),
               and the cheaper of buying or crafting is chosen.
@@ -19,7 +22,92 @@ local _, ns = ...
 local AH_CUT = 0.05
 ns.AH_CUT = AH_CUT
 
+-- Crafting bonuses ----------------------------------------------------------------------
+-- From Forever's game data (wago.tools DB2, build 1.60.1.70888): the Legacy trade
+-- tree's talents with their per-rank values, two talents that exist in the data but
+-- aren't in the tree yet, and two crafting-speed effects. Gathering ones are left out.
+-- settings.bonuses[key] = rank (ranked) or true (toggles); missing = off.
+ns.BONUSES = {
+  { key = "masterChef", name = "Master Chef", spell = 1225457, ranks = 5, per = 10, group = "Legacy talents", short = "cooking: extra results",
+    what = "Cooking recipes: %d%% chance to create an extra result." },
+  { key = "bartering", name = "Bartering", spell = 1225459, ranks = 2, per = 5, group = "Legacy talents", short = "cheaper vendor reagents",
+    what = "Vendor prices %d%% lower (reagents bought from vendors: vials, spices, thread, flux...).",
+    note = "Vendor prices ProfScan learns are what the merchant charged, so it stores them as full prices "
+      .. "using this setting. Set it before visiting vendors; prices learned with a different rank fix "
+      .. "themselves the next time you open that vendor." },
+  { key = "performance", name = "Performance Bonus", spell = 1225456, ranks = 3, per = 5, group = "Legacy talents", short = "extra Merchant's Favor",
+    what = "Crate turn-ins: %d%% chance of 100%% more Merchant's Favor (crates are priced for the average)." },
+  { key = "meticulous", name = "Meticulous", spell = 1225465, value = 15, group = "In the game files, not in the tree yet",
+    short = "potions, elixirs, flasks, First Aid",
+    what = "%d%% chance of extra results from First Aid recipes and Alchemy elixirs, potions, draughts and flasks." },
+  { key = "optimization", name = "Optimization", spell = 1225460, value = 5, group = "In the game files, not in the tree yet",
+    short = "reagent refunds (Eng, BS, LW, Tailoring)",
+    what = "Engineering, Blacksmithing, Leatherworking, Tailoring: %d%% chance per reagent to be refunded "
+      .. "(marked not yet implemented in the game data)." },
+  { key = "smelting", name = "Improved Smelting", spell = 1291915, value = 25, group = "Crafting speed", short = "faster copper/tin/bronze/silver smelts",
+    what = "%d%% shorter Smelt Copper, Tin, Bronze and Silver (equip effect of item 5199).",
+    note = "Only switch this on if the cast time the game shows doesn't already include it." },
+  { key = "deftDigits", name = "Deft Digits", spell = 1290800, value = 75, group = "Crafting speed", short = "75% faster crafting",
+    what = "Crafting %d%% faster.",
+    note = "Only switch this on if the cast time the game shows doesn't already include it." },
+}
+local BONUS = {}
+for _, b in ipairs(ns.BONUSES) do BONUS[b.key] = b end
+
+-- The bonus's value in percent (0 when off).
+function ns:BonusValue(key)
+  local b, v = BONUS[key], self.db.settings.bonuses[key]
+  if not v then return 0 end
+  if b.ranks then return math.min(tonumber(v) or 0, b.ranks) * b.per end
+  return b.value
+end
+
+local METICULOUS = { "Elixir", "Potion", "Draught", "Flask" }
+local REFUND_PROFS = { Engineering = true, Blacksmithing = true, Leatherworking = true, Tailoring = true }
+local SMELTS = { [2657] = true, [3304] = true, [2659] = true, [2658] = true } -- Copper, Tin, Bronze, Silver
+
+-- Chance (0..1) of an extra result per craft from your bonuses.
+function ns:ExtraResultChance(recipe)
+  local prof = recipe.profession
+  if prof == "Cooking" then return self:BonusValue("masterChef") / 100 end
+  if prof == "First Aid" then return self:BonusValue("meticulous") / 100 end
+  if prof == "Alchemy" and self.db.settings.bonuses.meticulous then
+    local name = recipe.name or ((recipe.item or 0) > 0 and self:ItemName(recipe.item)) or ""
+    for _, word in ipairs(METICULOUS) do
+      if name:find(word, 1, true) then return self:BonusValue("meticulous") / 100 end
+    end
+  end
+  return 0
+end
+
+-- Share of a recipe's reagents actually used up (1 = all; refunds lower it).
+function ns:ReagentFactor(recipe)
+  if REFUND_PROFS[recipe.profession] then return 1 - self:BonusValue("optimization") / 100 end
+  return 1
+end
+
+-- Cast time multiplier from your crafting-speed bonuses.
+function ns:CastFactor(recipe)
+  local f = 1
+  if SMELTS[recipe.spell] then f = f * (1 - self:BonusValue("smelting") / 100) end
+  local speed = self:BonusValue("deftDigits")
+  if speed > 0 then f = f / (1 + speed / 100) end
+  return f
+end
+
+-- Average Merchant's Favor a crate turn-in gives, with Performance Bonus.
+function ns:ExpectedFavor(favor)
+  return favor and favor * (1 + self:BonusValue("performance") / 100)
+end
+
 -- Vendor prices ------------------------------------------------------------------------
+
+-- What a vendor charges you now (stored prices are full prices; Bartering applies here).
+function ns:VendorBuyPrice(id)
+  local full = self.db.vendor[id]
+  if not full then return nil end
+  return math.max(1, math.floor(full * (1 - self:BonusValue("bartering") / 100) + 0.5))
+end
 
 local function MerchantItem(i)
   if C_MerchantFrame and C_MerchantFrame.GetItemInfo then
@@ -38,7 +126,9 @@ function ns:CaptureMerchant()
     local id = link and tonumber(link:match("item:(%d+)"))
     local price, quantity, extended = MerchantItem(i)
     if id and price and price > 0 and not extended then
-      self.db.vendor[id] = math.floor(price / math.max(1, quantity or 1) + 0.5)
+      -- the merchant already took off Bartering; store the full price
+      local unit = price / math.max(1, quantity or 1) / (1 - self:BonusValue("bartering") / 100)
+      self.db.vendor[id] = math.floor(unit + 0.5)
     end
   end
 end
@@ -88,7 +178,7 @@ end
 -- Returns nil when there is no price at all.
 function ns:PriceCurve(id)
   local min, t = self:LatestAHPrice(id)
-  local vendor = self.db.vendor[id]
+  local vendor = self:VendorBuyPrice(id)
   if not min and not vendor then return nil end
   local levels, lt = self:Ladder(id)
   if min and (not levels or #levels == 0 or (t and lt and lt < t - STALE_LEVELS)) then
@@ -118,7 +208,7 @@ function ns:BuyPrice(id, qty)
   local ah, t = self:LatestAHPrice(id)
   local flag
   if ah and qty and qty > 1 then ah, flag = self:DepthPrice(id, qty) end
-  local vendor = self.db.vendor[id]
+  local vendor = self:VendorBuyPrice(id)
   if vendor and (not ah or vendor <= ah) then return vendor, "vendor" end
   if ah then return ah, "ah", t, flag end
 end
@@ -228,9 +318,10 @@ function ns:RecipeEconomics(recipe, batch) -- batch: crafts to price for (defaul
   else
     e.batch, e.batchWhy = self:BatchCrafts(recipe)
   end
+  local used = self:ReagentFactor(recipe)
   for _, reagent in ipairs(recipe.reagents) do
-    local price, _, _, flag = self:BuyPrice(reagent[1], reagent[2] * e.batch)
-    if price then e.cost = e.cost + price * reagent[2] else e.missing = e.missing + 1 end
+    local price, _, _, flag = self:BuyPrice(reagent[1], reagent[2] * used * e.batch)
+    if price then e.cost = e.cost + price * reagent[2] * used else e.missing = e.missing + 1 end
     if flag == "short" then e.short = true elseif flag == "nodepth" then e.nodepth = true end
   end
   e.complete = #recipe.reagents > 0 and e.missing == 0
@@ -280,7 +371,7 @@ function ns:CraftTiming(recipe)
   if not recipe or recipe.gathered or recipe.spell <= 0 then return nil end
   local cast = CastTime(recipe.spell)
   if not cast then return nil end
-  local t = { cast = cast / 1000 }
+  local t = { cast = cast / 1000 * self:CastFactor(recipe) }
   local cooldown = GetSpellBaseCooldown and GetSpellBaseCooldown(recipe.spell)
   if cooldown and cooldown > 0 then t.cooldown = cooldown / 1000 end
   t.seconds = t.cast
@@ -314,11 +405,13 @@ local CraftItem
 local function CraftRecipe(self, recipe, qty, path)
   local node = { recipe = recipe, qty = qty, yield = ns.Yield(recipe), children = {}, unit = 0,
                  complete = #recipe.reagents > 0 }
+  local used = self:ReagentFactor(recipe)
   for _, reagent in ipairs(recipe.reagents) do
-    local child = CraftItem(self, reagent[1], reagent[2] * qty, reagent[2], path)
+    local per = reagent[2] * used
+    local child = CraftItem(self, reagent[1], per * qty, per, path)
     node.children[#node.children + 1] = child
     if child.bestUnit then
-      node.unit = node.unit + child.bestUnit * reagent[2]
+      node.unit = node.unit + child.bestUnit * per
     else
       node.complete = false
     end

@@ -2,6 +2,7 @@ local ADDON, ns = ...
 
 ns.items = {}     -- the scan list: flat, sorted, de-duplicated item IDs (see RebuildItems)
 ns.watched = {}   -- [itemID] = true for items on the scan list
+ns.focusItems = {} -- the focused scan list: sorted item IDs from settings.focusScan
 
 local GetItemInfo = C_Item and C_Item.GetItemInfo or GetItemInfo
 ns.GetItemInfo = GetItemInfo
@@ -29,6 +30,8 @@ local DEFAULTS = {
   focus = {},       -- item IDs followed by watch mode
   scanAdd = {},     -- [itemID] = true: added to the scan list in game
   scanRemove = {},  -- [itemID] = true: Items.lua entries removed in game
+  focusScan = {},   -- [itemID] = true: the focused scan list, set by you (separate from the scan list)
+  bonuses = {},     -- crafting bonuses: [key] = rank or true (see ns.BONUSES in Pricing.lua)
   watchInterval = 60,   -- seconds between polls of the same item
   watchLevels = 40,     -- cheapest price levels recorded per poll
   watchMaxMinutes = 60, -- a watch session stops by itself after this long
@@ -92,6 +95,7 @@ function ns:PLAYER_LOGIN()
   -- Ask the server for item names now so they are cached before the first scan.
   for _, id in ipairs(self.items) do GetItemInfo(id) end
   for _, id in ipairs(self.db.settings.focus) do GetItemInfo(id) end
+  for _, id in ipairs(self.focusItems) do GetItemInfo(id) end
   self.ahKey = self:CurrentAHKey()
   self:LoadData()
 end
@@ -164,7 +168,73 @@ function ns:RebuildItems()
   end
   for id in pairs(s.scanAdd) do Add(id) end
   table.sort(self.items)
+  self:RebuildFocusItems()
+end
+
+-- Focused scan list ----------------------------------------------------------------------
+-- A second, smaller list you fill yourself (e.g. one profession's items), scanned
+-- quick or deep on its own. Watch mode keeps its own list (settings.focus).
+
+function ns:RebuildFocusItems()
+  wipe(self.focusItems)
+  for id in pairs(self.db.settings.focusScan) do self.focusItems[#self.focusItems + 1] = id end
+  table.sort(self.focusItems)
   self:NotifyChanged()
+end
+
+function ns:IsFocusScan(id)
+  return id and self.db.settings.focusScan[id] == true
+end
+
+-- Adds item IDs to the focused scan list; returns how many were new.
+function ns:AddToFocusScan(ids)
+  local list, added = self.db.settings.focusScan, 0
+  for _, id in ipairs(ids) do
+    if id and id > 0 and not list[id] then
+      list[id] = true
+      GetItemInfo(id)
+      if self.ahOpen then self.KeyInfo(id) end
+      added = added + 1
+    end
+  end
+  if added > 0 then self:RebuildFocusItems() end
+  return added
+end
+
+function ns:ReportFocusScanAdd(ids)
+  local added = self:AddToFocusScan(ids)
+  self.Print(("Added %d new items to the focused scan list (%d were already on it); %d in total."):format(
+    added, #ids - added, #self.focusItems))
+end
+
+function ns:RemoveFromFocusScan(id)
+  self.db.settings.focusScan[id] = nil
+  self:RebuildFocusItems()
+  self.Print((self:ItemName(id) or id) .. " removed from the focused scan list.")
+end
+
+function ns:ToggleFocusScan(id)
+  if self:IsFocusScan(id) then return self:RemoveFromFocusScan(id) end
+  self:ReportFocusScanAdd({ id })
+end
+
+StaticPopupDialogs["PROFSCAN_CLEAR_FOCUS_SCAN"] = {
+  text = "ProfScan: remove all %d items from the focused scan list?\n\nTheir scanned prices are kept.",
+  button1 = YES,
+  button2 = NO,
+  OnAccept = function()
+    wipe(ns.db.settings.focusScan)
+    ns:RebuildFocusItems()
+    ns.Print("Focused scan list cleared.")
+  end,
+  timeout = 0,
+  whileDead = true,
+  hideOnEscape = true,
+}
+
+function ns:ConfirmClearFocusScan()
+  if #self.focusItems == 0 then return self.Print("The focused scan list is already empty.") end
+  StaticPopup_Show("PROFSCAN_CLEAR_FOCUS_SCAN", #self.focusItems)
 end
 
 -- Turns one part of the scan list on or off ("reagents" | "trade" | "products").
@@ -228,8 +298,12 @@ end
 
 local HELP = {
   "/pscan - open or close the ProfScan window",
-  "/pscan scan - quick scan: lowest price and quantity for every watched item",
-  "/pscan deep - quick scan plus the cheapest price levels of each item (slower)",
+  "/pscan scan - full scan (quick): lowest price and quantity of every item on the scan list",
+  "/pscan deep - full scan (deep): quick scan plus the cheapest price levels of each item (slower)",
+  "/pscan fscan - focused scan (quick): the same, for the focused scan list only",
+  "/pscan fdeep - focused scan (deep)",
+  "/pscan fadd <item link or ID> - add an item to / remove it from the focused scan list",
+  "/pscan fclear - empty the focused scan list (asks first)",
   "/pscan stop - stop the running scan (what was scanned so far is kept)",
   "/pscan watch - start or stop watch mode (order book polling of the focus list)",
   "/pscan focus <item link or ID> - add an item to / remove it from the focus list",
@@ -303,6 +377,14 @@ SlashCmdList.PROFSCAN = function(msg)
     ns:StartScan(false)
   elseif cmd == "deep" then
     ns:StartScan(true)
+  elseif cmd == "fscan" then
+    ns:StartScan(false, true)
+  elseif cmd == "fdeep" then
+    ns:StartScan(true, true)
+  elseif cmd == "fadd" and itemArg then
+    ns:ToggleFocusScan(itemArg)
+  elseif cmd == "fclear" then
+    ns:ConfirmClearFocusScan()
   elseif cmd == "stop" then
     ns:StopScan("stopped")
   elseif cmd == "auto" then

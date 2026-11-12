@@ -538,7 +538,7 @@ end
 -- Tooltips -----------------------------------------------------------------------------
 
 local function AddTooltipLines(tooltip, id)
-  if not (id and ns.watched[id] and ns.db) then return end
+  if not (id and ns.db and (ns.watched[id] or ns:IsFocusScan(id))) then return end
   local st = ns:GetStats(id, 7)
   if not st then
     tooltip:AddLine("ProfScan: not scanned yet", 0.6, 0.6, 0.6)

@@ -163,7 +163,7 @@ function ns.UI.BuildDataPage(page)
       ("Daily summaries: %d%s"):format(#db.daily, Since(OldestDay(db.daily))),
       ("Watch polls: %d%s"):format(#db.watchLog, Since(Oldest(db.watchLog))),
       ("Watch events: %d%s"):format(#db.watchEvents, Since(Oldest(db.watchEvents))),
-      ("Scan list: %d items    Watch list: %d items"):format(#ns.items, #db.settings.focus),
+      ("Scan list: %d items    Focused list: %d    Watch list: %d"):format(#ns.items, #ns.focusItems, #db.settings.focus),
       ("Recipes read from profession windows: %d"):format(captured),
       ("Vendor prices learned: %d"):format(vendor),
       ImportedLine(),

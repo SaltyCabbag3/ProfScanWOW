@@ -278,6 +278,76 @@ local function BuildCraftSettings()
   panel.knownOnly = knownOnly
   local leftHeight = 96 + rows * 22 + 34
 
+  -- Crafting bonuses (left column, below) ------------------------------------------------
+  -- One button per bonus (ns.BONUSES in Pricing.lua): click for the next rank / on,
+  -- right-click for the previous rank / off.
+  local bonusTitle = UI.Text(panel, "GameFontNormal")
+  bonusTitle:SetPoint("TOPLEFT", 12, -leftHeight)
+  bonusTitle:SetText("Crafting bonuses")
+  local by, group = -leftHeight - 18, nil
+  local bonusButtons = {}
+  local function BonusText(b)
+    local v = ns.db.settings.bonuses[b.key]
+    if b.ranks then return ("%d/%d"):format(math.min(tonumber(v) or 0, b.ranks), b.ranks) end
+    return v and "|cff40ff40On|r" or "|cffaaaaaaOff|r"
+  end
+  for _, b in ipairs(ns.BONUSES) do
+    if b.group ~= group then
+      group = b.group
+      local h = UI.Text(panel, "GameFontNormalSmall")
+      h:SetPoint("TOPLEFT", 14, by)
+      h:SetText(group)
+      by = by - 14
+    end
+    local btn = UI.Button(panel, "", 48, nil)
+    btn:SetHeight(20)
+    btn:SetPoint("TOPLEFT", 12, by)
+    btn:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+    btn:SetScript("OnClick", function(self, button)
+      local bonuses = ns.db.settings.bonuses
+      if b.ranks then
+        local r = (tonumber(bonuses[b.key]) or 0) + (button == "RightButton" and -1 or 1)
+        if r > b.ranks then r = 0 elseif r < 0 then r = b.ranks end
+        bonuses[b.key] = r > 0 and r or nil
+      else
+        bonuses[b.key] = not bonuses[b.key] or nil
+      end
+      Changed()
+      if self:IsMouseOver() then self:GetScript("OnEnter")(self) end
+    end)
+    btn:SetScript("OnEnter", function(self)
+      GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+      GameTooltip:SetText(b.name)
+      local now = ns:BonusValue(b.key)
+      if b.ranks then
+        GameTooltip:AddLine(b.what:format(now), 1, 1, 1, true)
+        GameTooltip:AddLine(("%d%% per rank, %d ranks."):format(b.per, b.ranks), 0.8, 0.8, 0.8)
+      else
+        GameTooltip:AddLine(b.what:format(b.value), 1, 1, 1, true)
+      end
+      if b.note then GameTooltip:AddLine(b.note, 0.8, 0.8, 0.8, true) end
+      if b.spell and IsPlayerSpell and IsPlayerSpell(b.spell) then
+        GameTooltip:AddLine("This character has it.", 0.4, 1, 0.4)
+      end
+      GameTooltip:AddLine(b.ranks and "Click: next rank   Right-click: previous rank" or "Click: on/off", 0.6, 0.6, 0.6)
+      GameTooltip:Show()
+    end)
+    btn:SetScript("OnLeave", GameTooltip_Hide)
+    local label = UI.Text(panel, "GameFontHighlightSmall")
+    label:SetPoint("LEFT", btn, "RIGHT", 6, 0)
+    label:SetWidth(260)
+    label:SetText(b.name .. "  |cffaaaaaa" .. b.short .. "|r")
+    label:SetWordWrap(false)
+    bonusButtons[#bonusButtons + 1] = { btn = btn, bonus = b }
+    by = by - 21
+  end
+  leftHeight = -by + 8
+  local baseRefreshBonuses = Refresh
+  Refresh = function()
+    baseRefreshBonuses()
+    for _, r in ipairs(bonusButtons) do r.btn:SetText(BonusText(r.bonus)) end
+  end
+
   -- Locked recipes (right column) -------------------------------------------------------
   -- checked = shown and used; unchecked = left out of recipe lists and crafting trees
   local X = 342
@@ -437,14 +507,24 @@ function ns.UI.BuildRecipesPage(page)
   settingsButton:SetScript("OnLeave", GameTooltip_Hide)
 
   local bulkLabel = UI.Text(left, "GameFontNormalSmall")
-  bulkLabel:SetPoint("BOTTOMLEFT", 2, 76)
+  bulkLabel:SetPoint("BOTTOMLEFT", 2, 100)
   bulkLabel:SetText("All listed recipes:")
+  local focusRecipes = UI.Button(left, "Focus recipes", 126, function() ns:ReportFocusScanAdd(RecipeItems(shown)) end)
+  focusRecipes:SetPoint("BOTTOMLEFT", 0, 0)
+  focusRecipes:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    GameTooltip:SetText("Add to the focused scan list")
+    GameTooltip:AddLine(("The reagents and products of the %d recipes listed now (filters apply). "
+      .. "Focused scan (quick or deep) then scans only that list."):format(#shown), 1, 1, 1, true)
+    GameTooltip:Show()
+  end)
+  focusRecipes:SetScript("OnLeave", GameTooltip_Hide)
   local watchRecipes = UI.Button(left, "Watch recipes", 126, function() ns:ReportWatchAdd(RecipeItems(shown)) end)
-  watchRecipes:SetPoint("BOTTOMLEFT", 0, 0)
+  watchRecipes:SetPoint("BOTTOMLEFT", 0, 24)
   local scanProducts = UI.Button(left, "Scan products", 126, function() ns:ReportScanAdd(ProductIDs(shown)) end)
-  scanProducts:SetPoint("BOTTOMLEFT", 0, 24)
+  scanProducts:SetPoint("BOTTOMLEFT", 0, 48)
   local scanReagents = UI.Button(left, "Scan reagents", 126, function() ns:ReportScanAdd(ReagentIDs(shown)) end)
-  scanReagents:SetPoint("BOTTOMLEFT", 0, 48)
+  scanReagents:SetPoint("BOTTOMLEFT", 0, 72)
 
   -- Right column: controls ---------------------------------------------------------------
   local right = CreateFrame("Frame", nil, page)

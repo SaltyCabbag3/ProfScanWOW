@@ -288,6 +288,8 @@ function ns.UI.BuildRecipeView(frame)
     { "Scan full tree", function() ns:ReportScanAdd(ns:RecipeTreeItems(recipe)) end, true },
     { "Watch recipe", function() ns:ReportWatchAdd(ns.RecipeItems({ recipe })) end },
     { "Watch full tree", function() ns:ReportWatchAdd(ns:RecipeTreeItems(recipe)) end, true },
+    { "Focus recipe", function() ns:ReportFocusScanAdd(ns.RecipeItems({ recipe })) end },
+    { "Focus full tree", function() ns:ReportFocusScanAdd(ns:RecipeTreeItems(recipe)) end, true },
   }
   for i, action in ipairs(actions) do
     local b = UI.Button(frame, action[1], 120, function() if recipe then action[2]() end end)

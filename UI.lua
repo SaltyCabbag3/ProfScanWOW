@@ -230,7 +230,7 @@ local TAB_TITLES = { prices = "Prices", recipes = "Professions", watch = "Watch"
 
 local function PriceRows()
   local rows, filter = {}, main.filter:GetText():lower()
-  for _, id in ipairs(ns.items) do
+  for _, id in ipairs(main.focusedList and ns.focusItems or ns.items) do
     local colored, name = ItemName(id)
     if filter == "" or name:lower():find(filter, 1, true) then
       local st = ns:GetStats(id, 7)
@@ -250,7 +250,8 @@ local function PriceRows()
           age = r and -r.t or 0,
         },
         cells = {
-          (ns:IsFocus(id) and "|cff33ccff[W]|r " or "") .. colored,
+          (ns:IsFocus(id) and "|cff33ccff[W]|r " or "")
+            .. (not main.focusedList and ns:IsFocusScan(id) and "|cffffaa33[F]|r " or "") .. colored,
           r and ns.Money(r.min) or "-",
           st and ns.Money(st.median) or "-",
           Percent(ratio),
@@ -347,6 +348,10 @@ local function Refresh()
   if top then
     main.views[top.kind].refresh()
   elseif main.tab == "prices" then
+    main.listSwitch:SetText(main.focusedList and ("Focused list (%d)"):format(#ns.focusItems)
+      or ("Full scan list (%d)"):format(#ns.items))
+    main.clearFocused:SetShown(main.focusedList == true)
+    main.prices.emptyText = main.focusedList and "The focused scan list is empty, or no items match." or "No items match."
     main.prices:SetData(PriceRows())
   elseif main.tab == "recipes" then
     main.refreshRecipes()
@@ -424,18 +429,39 @@ local function StatusText()
 end
 
 -- Enables/disables scan and watch buttons and keeps their labels current.
-local function UpdateControls(scanBtn, deepBtn, watchBtn)
+local function UpdateControls(scanButtons, watchBtn)
   local busy = ns:IsScanning()
-  scanBtn:SetEnabled(ns.ahOpen and not busy)
-  deepBtn:SetEnabled(ns.ahOpen and not busy)
+  for _, b in ipairs(scanButtons) do b:SetEnabled(ns.ahOpen and not busy) end
   watchBtn:SetEnabled(ns.ahOpen or ns:IsWatching()) -- a paused watch can be stopped with the AH closed
   watchBtn:SetText(ns:IsWatching() and "Stop watch" or "Start watch")
+end
+
+local SCAN_TIPS = {
+  full = "Every item on the scan list (reagents, trade company items, and what you added; see the Data tab).",
+  focused = "Only the items on the focused scan list, which you fill yourself: \"Focus recipes\" on the "
+    .. "Professions tab, \"Focused scan\" on an item or recipe, or /pscan fadd. The Prices tab can show it.",
+  quick = "Quick: lowest price and quantity listed, about 50 items per request.",
+  deep = "Deep: a quick scan, then each commodity's cheapest price levels (one request per item, slower). "
+    .. "Crafting costs for more than a few crafts need these.",
+}
+function ns.UI.ScanButtonTooltip(btn, deep, focused)
+  btn:SetMotionScriptsWhileDisabled(true)
+  btn:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_TOP")
+    GameTooltip:SetText(ns:ScanName(deep, focused))
+    local n = focused and #ns.focusItems or #ns.items
+    GameTooltip:AddLine(("%d items. %s"):format(n, focused and SCAN_TIPS.focused or SCAN_TIPS.full), 1, 1, 1, true)
+    GameTooltip:AddLine(deep and SCAN_TIPS.deep or SCAN_TIPS.quick, 0.8, 0.8, 0.8, true)
+    if not ns.ahOpen then GameTooltip:AddLine("Open the auction house first.", 1, 0.4, 0.4) end
+    GameTooltip:Show()
+  end)
+  btn:SetScript("OnLeave", GameTooltip_Hide)
 end
 
 local function CreatePricesPage(page)
   local hint = Text(page, "GameFontDisableSmall")
   hint:SetPoint("TOPLEFT", 4, -4)
-  hint:SetText("Click: details   Right-click: watch/unwatch   Ctrl-right-click: remove   Shift-click: link")
+  hint:SetText("Click: details   Right-click: watch/unwatch   Ctrl-right-click: remove from this list   Shift-click: link")
   main.filter = CreateFrame("EditBox", nil, page, "InputBoxTemplate")
   main.filter:SetSize(140, 18)
   main.filter:SetPoint("TOPRIGHT", -4, 0)
@@ -445,6 +471,23 @@ local function CreatePricesPage(page)
   local filterLabel = Text(page, "GameFontNormalSmall")
   filterLabel:SetPoint("RIGHT", main.filter, "LEFT", -8, 0)
   filterLabel:SetText("Filter")
+  local clearFocused = Button(page, "Clear...", 64, function() ns:ConfirmClearFocusScan() end)
+  clearFocused:SetPoint("RIGHT", filterLabel, "LEFT", -12, 0)
+  main.listSwitch = Button(page, "", 150, function()
+    main.focusedList = not main.focusedList
+    Refresh()
+  end)
+  main.listSwitch:SetPoint("RIGHT", clearFocused, "LEFT", -4, 0)
+  main.listSwitch:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_TOP")
+    GameTooltip:SetText("Which list to show")
+    GameTooltip:AddLine("Full scan list: everything Full scan covers. Focused list: the items you picked for "
+      .. "Focused scan (\"Focus recipes\" on the Professions tab, \"Focused scan\" on an item or recipe, "
+      .. "/pscan fadd). Items on the focused list show [F] on the full list.", 1, 1, 1, true)
+    GameTooltip:Show()
+  end)
+  main.listSwitch:SetScript("OnLeave", GameTooltip_Hide)
+  main.clearFocused = clearFocused
 
   main.sortKey, main.sortDesc = "name", false
   main.prices = CreateTable(page, {
@@ -464,7 +507,7 @@ local function CreatePricesPage(page)
   end
   main.prices.onClick = function(item, button)
     if button == "RightButton" and IsControlKeyDown() then
-      ns:RemoveFromScanList(item.id)
+      if main.focusedList then ns:RemoveFromFocusScan(item.id) else ns:RemoveFromScanList(item.id) end
     elseif button == "RightButton" then
       ns:ToggleFocus(item.id)
     elseif IsModifiedClick("CHATLINK") then
@@ -602,10 +645,17 @@ local function CreateMain()
   main.status:SetPoint("BOTTOMLEFT", 16, 16)
   local watchBtn = Button(main, "Start watch", 100, function() ns:ToggleWatch() end)
   watchBtn:SetPoint("BOTTOMRIGHT", -12, 10)
-  local deepBtn = Button(main, "Deep scan", 90, function() ns:StartScan(true) end)
-  deepBtn:SetPoint("RIGHT", watchBtn, "LEFT", -4, 0)
-  local scanBtn = Button(main, "Quick scan", 90, function() ns:StartScan(false) end)
-  scanBtn:SetPoint("RIGHT", deepBtn, "LEFT", -4, 0)
+  local scanButtons = {}
+  local anchor = watchBtn
+  for _, b in ipairs({ -- right to left
+    { "Focused deep", true, true }, { "Focused quick", false, true },
+    { "Full deep", true, false }, { "Full quick", false, false },
+  }) do
+    local btn = Button(main, b[1], 104, function() ns:StartScan(b[2], b[3]) end)
+    btn:SetPoint("RIGHT", anchor, "LEFT", anchor == watchBtn and -12 or -4, 0)
+    ns.UI.ScanButtonTooltip(btn, b[2], b[3])
+    scanButtons[#scanButtons + 1], anchor = btn, btn
+  end
 
   local elapsed = 0
   main:SetScript("OnUpdate", function(_, dt)
@@ -613,7 +663,7 @@ local function CreateMain()
     if elapsed < 0.5 then return end
     elapsed = 0
     main.status:SetText(StatusText())
-    UpdateControls(scanBtn, deepBtn, watchBtn)
+    UpdateControls(scanButtons, watchBtn)
     -- the watch tab shows ages and live activity, so keep it ticking
     if ns.dirty or (#stack == 0 and main.tab == "watch") then Refresh() end
   end)
@@ -640,7 +690,7 @@ local ahPanel
 local function CreateAHPanel()
   local host = AuctionHouseFrame or AuctionFrame
   if not host then return end
-  ahPanel = Panel(nil, host, 170, 196)
+  ahPanel = Panel(nil, host, 186, 254)
   ahPanel:SetPoint("TOPLEFT", host, "TOPRIGHT", 2, 0)
   ahPanel:SetClampedToScreen(true)
 
@@ -648,18 +698,25 @@ local function CreateAHPanel()
   title:SetPoint("TOP", 0, -10)
   title:SetText("ProfScan")
 
-  local scanBtn = Button(ahPanel, "Quick scan", 146, function() ns:StartScan(false) end)
-  scanBtn:SetPoint("TOP", 0, -30)
-  local deepBtn = Button(ahPanel, "Deep scan", 146, function() ns:StartScan(true) end)
-  deepBtn:SetPoint("TOP", scanBtn, "BOTTOM", 0, -4)
-  local watchBtn = Button(ahPanel, "Start watch", 146, function() ns:ToggleWatch() end)
-  watchBtn:SetPoint("TOP", deepBtn, "BOTTOM", 0, -4)
-  local openBtn = Button(ahPanel, "Open window", 146, function() ns:ToggleWindow() end)
+  local scanButtons, prev = {}, nil
+  for _, b in ipairs({
+    { "Full scan (quick)", false, false }, { "Full scan (deep)", true, false },
+    { "Focused scan (quick)", false, true }, { "Focused scan (deep)", true, true },
+  }) do
+    local btn = Button(ahPanel, b[1], 162, function() ns:StartScan(b[2], b[3]) end)
+    if prev then btn:SetPoint("TOP", prev, "BOTTOM", 0, b[3] and not scanButtons[3] and -10 or -4)
+    else btn:SetPoint("TOP", 0, -30) end
+    ns.UI.ScanButtonTooltip(btn, b[2], b[3])
+    scanButtons[#scanButtons + 1], prev = btn, btn
+  end
+  local watchBtn = Button(ahPanel, "Start watch", 162, function() ns:ToggleWatch() end)
+  watchBtn:SetPoint("TOP", prev, "BOTTOM", 0, -10)
+  local openBtn = Button(ahPanel, "Open window", 162, function() ns:ToggleWindow() end)
   openBtn:SetPoint("TOP", watchBtn, "BOTTOM", 0, -4)
 
   local status = Text(ahPanel)
   status:SetPoint("TOPLEFT", openBtn, "BOTTOMLEFT", 0, -8)
-  status:SetWidth(146)
+  status:SetWidth(162)
   status:SetJustifyV("TOP")
 
   local elapsed = 0
@@ -668,7 +725,7 @@ local function CreateAHPanel()
     if elapsed < 0.25 then return end
     elapsed = 0
     status:SetText(StatusText())
-    UpdateControls(scanBtn, deepBtn, watchBtn)
+    UpdateControls(scanButtons, watchBtn)
   end)
 end
 

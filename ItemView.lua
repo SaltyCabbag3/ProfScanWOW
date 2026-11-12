@@ -35,8 +35,12 @@ function ns.UI.BuildItemView(frame)
     if ns.watched[itemID] then ns:RemoveFromScanList(itemID) else ns:ReportScanAdd({ itemID }) end
   end)
   scanBtn:SetPoint("RIGHT", watchBtn, "LEFT", -4, 0)
+  local focusBtn = UI.Button(frame, "Focused scan", 130, function()
+    if itemID then ns:ToggleFocusScan(itemID) end
+  end)
+  focusBtn:SetPoint("RIGHT", scanBtn, "LEFT", -4, 0)
   local linkBtn = UI.Button(frame, "Link", 60, function() if itemID then UI.InsertItemLink(itemID) end end)
-  linkBtn:SetPoint("RIGHT", scanBtn, "LEFT", -4, 0)
+  linkBtn:SetPoint("RIGHT", focusBtn, "LEFT", -4, 0)
 
   -- Left: statistics ----------------------------------------------------------------------
   local now = UI.Text(frame)
@@ -98,10 +102,12 @@ function ns.UI.BuildItemView(frame)
     title:SetText(colored)
     local flags = { "item " .. itemID }
     if ns.watched[itemID] then flags[#flags + 1] = "on the scan list" end
+    if ns:IsFocusScan(itemID) then flags[#flags + 1] = "on the focused scan list" end
     if ns:IsFocus(itemID) then flags[#flags + 1] = "watched" end
     sub:SetText(table.concat(flags, "  -  "))
     watchBtn:SetText(ns:IsFocus(itemID) and "Unwatch" or "Watch")
     scanBtn:SetText(ns.watched[itemID] and "Remove from scan" or "Add to scan list")
+    focusBtn:SetText(ns:IsFocusScan(itemID) and "Unfocus scan" or "Focused scan")
 
     -- auction house
     local all = ns:GetStats(itemID, nil)
@@ -125,7 +131,7 @@ function ns.UI.BuildItemView(frame)
     for i, fs in ipairs(ahCols) do fs:SetText(table.concat(cols[i], "\n")) end
 
     -- vendor
-    local sell, buy = ns:VendorSellPrice(itemID), ns.db.vendor[itemID]
+    local sell, buy = ns:VendorSellPrice(itemID), ns:VendorBuyPrice(itemID)
     local imp = ns.IMPORTED
     local est = imp and imp.ah == ns.ahKey and imp.sold and imp.sold[itemID]
     vendorText:SetText(("|cffffd100Vendor|r\nPays %s   Sells for %s%s"):format(

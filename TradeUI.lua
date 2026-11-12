@@ -261,8 +261,9 @@ function ns.UI.BuildTradePane(parent)
     wipe(shownItems)
     for crateIndex, c in ipairs(data.crates) do
       local crateID, name, level, favor, fills = c[1], c[2], c[3], c[4], c[5]
+      local avgFavor = ns:ExpectedFavor(favor) -- with Performance Bonus (Craft settings)
       local options, bestCost = {}, nil
-      local need = ns:CratesForGoal(favor) or 1 -- crates the Favor goal takes with this kind
+      local need = ns:CratesForGoal(avgFavor) or 1 -- crates the Favor goal takes with this kind
       for _, fill in ipairs(fills) do
         local item, qty = fill[1], fill[2]
         shownItems[#shownItems + 1] = item
@@ -277,7 +278,7 @@ function ns.UI.BuildTradePane(parent)
       for _, o in ipairs(options) do
         local itemName = select(2, UI.ItemName(o.item))
         local best = o.cost and o.cost == bestCost
-        local perFavor = favor and o.cost and (o.cost + cratePrice - pays) / favor
+        local perFavor = favor and o.cost and (o.cost + cratePrice - pays) / avgFavor
         rows[#rows + 1] = {
           id = o.item,
           crateIndex = crateIndex,
@@ -285,12 +286,13 @@ function ns.UI.BuildTradePane(parent)
           tooltipLines = {
             ("%s crate (level %d)%s"):format(name, level,
               favor and (": " .. favor .. " Merchant's Favor") or ": Favor not known yet (seen in beta only)"),
+            favor and avgFavor > favor and ("Performance Bonus: about %.1f Favor per turn-in on average"):format(avgFavor) or nil,
             crateState == "ah" and ("The empty crate costs %s on the auction house"):format(ns.Money(cratePrice))
               or crateState == "unknown" and "The empty crate's price isn't scanned yet (counted as 0)"
               or "Crate price not counted (setting off)",
             pays and ("Turn-in also pays about %s (estimate; /pscan cratemoney to change)"):format(ns.Money(pays)) or nil,
             need > 1 and perFavor and ("Priced for %d crates (the Favor goal): about %s in total"):format(
-              need, ns.Money(perFavor * favor * need)) or nil,
+              need, ns.Money(perFavor * avgFavor * need)) or nil,
             "Cheapest way to get the fill: " .. Via(o.node),
           },
           sort = {
@@ -400,7 +402,7 @@ function ns.UI.BuildTradePane(parent)
         if fill then
           local crateCost = 0
           if countCrates then crateCost = Marginal(o.crate[1], cratesUsed[o.crate[1]] or 0, 1) or 0 end
-          local per = (fill + crateCost - o.crate[4] * moneyPerFavor) / o.crate[4]
+          local per = (fill + crateCost - o.crate[4] * moneyPerFavor) / ns:ExpectedFavor(o.crate[4])
           if not bestPer or per < bestPer then best, bestPer, bestBuys = o, per, buy ~= nil and (not craft or buy <= craft) end
         end
       end
@@ -408,7 +410,8 @@ function ns.UI.BuildTradePane(parent)
       best.n = best.n + 1
       if bestBuys then used[best.item] = (used[best.item] or 0) + best.qty else best.crafted = best.crafted + 1 end
       cratesUsed[best.crate[1]] = (cratesUsed[best.crate[1]] or 0) + 1
-      total, favor = total + bestPer * best.crate[4], favor + best.crate[4]
+      local gained = ns:ExpectedFavor(best.crate[4])
+      total, favor = total + bestPer * gained, favor + gained
     end
     local parts, crates = {}, 0
     table.sort(opts, function(a, b) return a.n > b.n end)
@@ -431,8 +434,9 @@ function ns.UI.BuildTradePane(parent)
   local function PlanText()
     local goal = ns.db.settings.favorGoal or 0
     if goal <= 0 then return "|cffaaaaaaSet a Favor goal to price crates in bulk and get a cheapest plan.|r" end
-    if planCache.goal ~= goal or not planCache.at or GetTime() - planCache.at > PLAN_REFRESH then
-      planCache.goal, planCache.at, planCache.text = goal, GetTime(), GoalPlan(goal)
+    local key = goal .. ":" .. ns:BonusValue("performance")
+    if planCache.goal ~= key or not planCache.at or GetTime() - planCache.at > PLAN_REFRESH then
+      planCache.goal, planCache.at, planCache.text = key, GetTime(), GoalPlan(goal)
     end
     return planCache.text
   end

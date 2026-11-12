@@ -219,9 +219,11 @@ function ns:PrintRecipeInfo(spell)
   end
 end
 
--- Average number of items one craft makes.
+-- Average number of items one craft makes, including extra results from your
+-- crafting bonuses (Master Chef, Meticulous; see ns.BONUSES in Pricing.lua).
 function ns.Yield(recipe)
-  return ((recipe.yieldMin or 1) + (recipe.yieldMax or recipe.yieldMin or 1)) / 2
+  local base = ((recipe.yieldMin or 1) + (recipe.yieldMax or recipe.yieldMin or 1)) / 2
+  return base * (1 + ns:ExtraResultChance(recipe))
 end
 
 -- "x2" or "x2-4" for recipes making more than one, else "".

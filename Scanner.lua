@@ -11,6 +11,9 @@ local _, ns = ...
   When no request is pending it asks the running scan for its next job, and
   when there is no scan, watch mode (Watch.lua).
 
+  Two lists can be scanned: the full scan list (ns.items) and the focused scan
+  list you fill yourself (ns.focusItems). Either can be scanned quick or deep.
+
   Quick scan: C_AuctionHouse.SearchForItemKeys takes a whole list of items and
   answers with one row per item (lowest price + total quantity listed). One
   request covers ~50 items.
@@ -143,26 +146,33 @@ local function ScanFail()
   scan.failed = scan.failed + 1
 end
 
-function ns:StartScan(deep)
+-- deep: also read price levels; focused: scan the focused scan list instead of the full one.
+function ns:StartScan(deep, focused)
   if not self.ahOpen then return self.Print("Open the auction house first.") end
   if scan then return self.Print("A scan is already running. /pscan stop cancels it.") end
   if not (C_AuctionHouse and C_AuctionHouse.SearchForItemKeys) then
     return self.Print("This client has no C_AuctionHouse.SearchForItemKeys, so scanning is unavailable.")
   end
 
-  for _, id in ipairs(self.items) do KeyInfo(id) end -- start loading anything not cached yet
+  local items = {}
+  for i, id in ipairs(focused and self.focusItems or self.items) do items[i] = id end
+  if #items == 0 then
+    return self.Print(focused and "The focused scan list is empty. Add items from a recipe, an item or the "
+      .. "Professions tab (\"Focus recipes\"), or with /pscan fadd <item>." or "The scan list is empty.")
+  end
+  for _, id in ipairs(items) do KeyInfo(id) end -- start loading anything not cached yet
 
   local jobs, size = {}, self.db.settings.batchSize
-  for i = 1, #self.items, size do
+  for i = 1, #items, size do
     local ids, set = {}, {}
-    for j = i, math.min(i + size - 1, #self.items) do
-      ids[#ids + 1] = self.items[j]
-      set[self.items[j]] = true
+    for j = i, math.min(i + size - 1, #items) do
+      ids[#ids + 1] = items[j]
+      set[items[j]] = true
     end
     jobs[#jobs + 1] = { kind = "batch", owner = "scan", ids = ids, set = set, onResult = BatchResult, onFail = ScanFail }
   end
   if deep then
-    for _, id in ipairs(self.items) do
+    for _, id in ipairs(items) do
       jobs[#jobs + 1] = {
         kind = "commodity", owner = "scan", id = id, levels = self.db.settings.ladderDepth,
         onResult = DeepResult, onFail = ScanFail,
@@ -172,11 +182,12 @@ function ns:StartScan(deep)
 
   scan = {
     jobs = jobs, pos = 0, key = self.ahKey, stamp = time(), started = GetTime(), deep = deep,
+    items = items, focused = focused,
     results = {}, -- [itemID] = { min =, qty =, ladder = }
     covered = {}, -- [itemID] = true once a batch containing it came back
     failed = 0,
   }
-  self.Print(("Scanning %d items%s..."):format(#self.items, deep and " (deep)" or ""))
+  self.Print(("%s: %d items..."):format(self:ScanName(deep, focused), #items))
   self:NotifyChanged()
 end
 
@@ -188,8 +199,12 @@ function ns:IsScanning()
   return scan ~= nil
 end
 
+function ns:ScanName(deep, focused)
+  return (focused and "Focused scan" or "Full scan") .. (deep and " (deep)" or " (quick)")
+end
+
 function ns:ScanStatus()
-  if scan then return ("Scanning%s... %d/%d"):format(scan.deep and " (deep)" or "", scan.pos, #scan.jobs) end
+  if scan then return ("%s... %d/%d"):format(self:ScanName(scan.deep, scan.focused), scan.pos, #scan.jobs) end
 end
 
 local function NextScanJob()
@@ -216,7 +231,7 @@ function ns:FinishScan(reason)
   scan = nil
   self:DropRequest("scan")
   local saved = 0
-  for _, id in ipairs(self.items) do
+  for _, id in ipairs(s.items) do
     local r = s.results[id]
     if r or s.covered[id] then
       r = r or { min = 0, qty = 0 } -- searched but nothing listed
@@ -225,8 +240,8 @@ function ns:FinishScan(reason)
       saved = saved + 1
     end
   end
-  self.Print(("Scan %s: %d items saved in %.1fs%s."):format(
-    reason or "done", saved, GetTime() - s.started,
+  self.Print(("%s %s: %d items saved in %.1fs%s."):format(
+    self:ScanName(s.deep, s.focused), reason or "done", saved, GetTime() - s.started,
     s.failed > 0 and (", " .. s.failed .. " requests failed") or ""))
   self:NotifyChanged()
 end
@@ -310,6 +325,7 @@ function ns:AUCTION_HOUSE_SHOW()
   self.ahOpen = true
   self.ahKey = self:CurrentAHKey()
   for _, id in ipairs(self.items) do KeyInfo(id) end
+  for _, id in ipairs(self.focusItems) do KeyInfo(id) end
   for _, id in ipairs(self.db.settings.focus) do KeyInfo(id) end
   driver:Show()
   self:ResumeWatchForAH()
