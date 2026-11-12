@@ -543,9 +543,8 @@ function ns.UI.BuildRecipesPage(page)
   perHour:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
     GameTooltip:SetText("Margins per craft or per hour")
-    GameTooltip:AddLine(("Per hour = margin per craft x crafts per hour, from the recipe's cast time plus %.1fs "
-      .. "between crafts (/pscan overhead to change). Recipes with a cooldown show \"cd\"."):format(
-      ns.db.settings.craftOverhead or 0.5), 1, 1, 1, true)
+    GameTooltip:AddLine("Per hour = margin per craft x crafts per hour, from the recipe's cast time. "
+      .. "Recipes with a cooldown show \"cd\".", 1, 1, 1, true)
     GameTooltip:Show()
   end)
   perHour:SetScript("OnLeave", GameTooltip_Hide)

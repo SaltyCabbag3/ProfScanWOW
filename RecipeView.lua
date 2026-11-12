@@ -65,7 +65,7 @@ local function TreeRows(root, crafted)
     local time = ""
     if isCrafted then
       local t = ns:CraftTiming(node.craft.recipe)
-      local seconds = node.craft.qty * (t and t.seconds or (ns.db.settings.craftOverhead or 0.5))
+      local seconds = node.craft.qty * (t and t.seconds or 0)
       time = (t and "" or "~") .. Seconds(seconds)
     end
     local unit = isCrafted and node.craftUnit or node.buy
@@ -338,7 +338,7 @@ function ns.UI.BuildRecipeView(frame)
           lines[#lines + 1] = ("Time per craft: %s for the product + %s for crafted reagents"):format(
             Seconds(own), Seconds(math.max(0, p.time - own)))
         end
-        if p.approx then lines[#lines + 1] = "Some cast times are unknown; those crafts count only the overhead." end
+        if p.approx then lines[#lines + 1] = "Some cast times are unknown; those crafts count as instant." end
         if p.cooldown then lines[#lines + 1] = "Involves a recipe with a cooldown, so per hour doesn't apply." end
       end
       local perHour

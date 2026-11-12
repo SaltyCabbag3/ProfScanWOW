@@ -32,7 +32,6 @@ local DEFAULTS = {
   watchInterval = 60,   -- seconds between polls of the same item
   watchLevels = 40,     -- cheapest price levels recorded per poll
   watchMaxMinutes = 60, -- a watch session stops by itself after this long
-  craftOverhead = 0.5,  -- seconds lost between crafts, added to each cast time for "per hour"
   crateMoneyPerFavor = 50, -- copper a crate turn-in pays per Merchant's Favor (beta reports: ~2.5s per 5 Favor)
   batchCrafts = "stack",   -- crafts priced at once: a number, or "stack" (one stack of the product)
   countTradeItems = true,  -- add the AH price of empty crates and sealed writs to trade company costs
@@ -84,6 +83,7 @@ function ns:ADDON_LOADED(name)
     if db.settings[k] == nil then db.settings[k] = v end
   end
   db.settings.keepDays = nil -- old automatic pruning setting, no longer used
+  db.settings.craftOverhead = nil -- old time added between crafts, removed
   self.db = db
 end
 
@@ -236,7 +236,6 @@ local HELP = {
   "/pscan focus clear - empty the focus (watch) list (asks first)",
   "/pscan yield <spell ID> <min> [max] - set how many items a recipe makes (no numbers: undo)",
   "/pscan recipeinfo <spell ID> - what the profession API reports for a recipe",
-  "/pscan overhead <seconds> - time between crafts used for margin per hour (default 0.5)",
   "/pscan cratemoney <copper> - money a crate turn-in pays per Merchant's Favor (default 50)",
   "/pscan favorgoal <favor> - Merchant's Favor you aim for; crates are priced for it (0 = off, default 1000)",
   "/pscan repgoal <reputation> - reputation you aim for with writs; envelopes are priced for it (0 = off)",
@@ -280,10 +279,6 @@ SlashCmdList.PROFSCAN = function(msg)
   elseif cmd == "cratemoney" and tonumber(rest) then
     ns.db.settings.crateMoneyPerFavor = math.max(0, tonumber(rest))
     ns.Print(("Crate turn-ins now count as paying %dc per Merchant's Favor."):format(ns.db.settings.crateMoneyPerFavor))
-    ns:NotifyChanged()
-  elseif cmd == "overhead" and tonumber(rest) then
-    ns.db.settings.craftOverhead = math.max(0, tonumber(rest))
-    ns.Print(("Per-hour figures now add %.1fs between crafts."):format(ns.db.settings.craftOverhead))
     ns:NotifyChanged()
   elseif cmd == "recipeinfo" then
     ns:PrintRecipeInfo(tonumber(rest) or tonumber(rest:match("enchant:(%d+)")) or tonumber(rest:match("spell:(%d+)")))

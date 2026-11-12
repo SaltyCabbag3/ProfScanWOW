@@ -263,7 +263,7 @@ end
 
 -- Crafting speed -------------------------------------------------------------------------
 -- A recipe is a spell: its cast time and cooldown come from the game's spell
--- data. Crafts per hour = 3600 / (cast time + settings.craftOverhead).
+-- data. Crafts per hour = 3600 / cast time.
 -- Recipes with a cooldown (transmutes and the like) get no per-hour figure.
 
 local function CastTime(spell)
@@ -274,7 +274,7 @@ local function CastTime(spell)
   if GetSpellInfo then return (select(4, GetSpellInfo(spell))) end
 end
 
--- { cast = seconds, cooldown = seconds or nil, seconds = per craft incl. overhead,
+-- { cast = seconds, cooldown = seconds or nil, seconds = per craft (the cast time),
 --   perHour = crafts per hour or nil } or nil when the game doesn't say.
 function ns:CraftTiming(recipe)
   if not recipe or recipe.gathered or recipe.spell <= 0 then return nil end
@@ -283,7 +283,7 @@ function ns:CraftTiming(recipe)
   local t = { cast = cast / 1000 }
   local cooldown = GetSpellBaseCooldown and GetSpellBaseCooldown(recipe.spell)
   if cooldown and cooldown > 0 then t.cooldown = cooldown / 1000 end
-  t.seconds = t.cast + (self.db.settings.craftOverhead or 0.5)
+  t.seconds = t.cast
   if not t.cooldown and t.seconds > 0 then t.perHour = 3600 / t.seconds end
   return t
 end
@@ -373,7 +373,7 @@ end
   A route is one choice of buy or craft for every reagent in the crafting tree.
   Its cost is what gets bought; its time is every craft it involves: the
   product's own craft plus each crafted reagent's crafts (needed / items per
-  craft x that recipe's cast time + overhead, so 3 bars from a 2-bar smelt is
+  craft x that recipe's cast time, so 3 bars from a 2-bar smelt is
   1.5 smelts). Crafting a reagent usually saves money but costs time, so the
   route with the best margin per craft and the one with the best margin per
   hour can differ.
@@ -435,7 +435,7 @@ end
 
 RecipeRoutes = function(self, rnode)
   local timing = self:CraftTiming(rnode.recipe)
-  local seconds = timing and timing.seconds or (self.db.settings.craftOverhead or 0.5)
+  local seconds = timing and timing.seconds or 0 -- unknown cast time: counted as instant (approx)
   local acc = { { cost = 0, time = rnode.qty * seconds, cooldown = timing and timing.cooldown ~= nil,
                   approx = timing == nil } }
   if rnode.recipe.bundle then acc[1].time, acc[1].approx = 0, false end -- a crate fill: no craft of its own
