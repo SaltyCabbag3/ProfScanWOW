@@ -12,7 +12,7 @@ local _, ns = ...
   below a reagent that is cheaper to buy are greyed: they show the option,
   not the plan.
   The summary shows the margin per craft for selling on the auction house
-  (after the 5% cut) and to a vendor, each against the cheapest way to craft.
+  (after the cut: 5%, goblin 15%) and to a vendor, each against the cheapest way to craft.
   Batch: how many crafts are priced at once (default one stack of the
   product). Reagents are priced as buying the whole batch's worth, cheapest
   listings first, so thin markets cost more than their lowest price. In the
@@ -387,7 +387,7 @@ function ns.UI.BuildRecipeView(frame)
     if recipe.skill > 0 then parts[#parts + 1] = "skill " .. recipe.skill end
     if recipe.spell > 0 and ns:IsKnown(recipe.spell) then parts[#parts + 1] = "|cff40ff40known|r" end
     sub:SetText(table.concat(parts, "  -  "))
-    locks:SetText(table.concat(ns:LockLines(recipe, true), "     "))
+    locks:SetText(table.concat(ns:RecipeInfoLines(recipe, true), "     "))
     product:SetShown(recipe.item > 0)
     for _, w in ipairs(yieldWidgets) do w:SetShown(recipe.item > 0 and recipe.spell > 0) end
     if not yieldMin:HasFocus() then yieldMin:SetText(recipe.yieldMin or 1) end

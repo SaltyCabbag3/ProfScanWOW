@@ -9,7 +9,7 @@ local _, ns = ...
   the scan list or to watch mode.
   Right: recipes, filtered by category, name, and optionally to the ones this
   character knows. Per recipe: cost of buying the reagents (per craft), the
-  margin per craft when selling on the auction house (price after the 5% cut)
+  margin per craft when selling on the auction house (price after the cut: 5%, goblin 15%)
   and when selling to a vendor, each = price x items made ("x2" after the
   name) minus cost; "DE margin" = disenchanting every item made instead
   (average disenchant value, Disenchant.lua), and how sellable the product is: average quantity listed over 7 days
@@ -828,7 +828,7 @@ function ns.UI.BuildRecipesPage(page)
               spell = recipe.item == 0 and recipe.spell > 0 and recipe.spell or nil,
               icon = icon,
               recipe = recipe,
-              tooltipLines = GoalLines(recipe, e, goal, sold, soldVia, ns:LockLines(recipe)),
+              tooltipLines = GoalLines(recipe, e, goal, sold, soldVia, ns:RecipeInfoLines(recipe)),
               sort = {
                 name = name,
                 skill = recipe.skill,

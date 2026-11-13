@@ -5,6 +5,8 @@ __pycache__/
 
 # Game tables downloaded by tools/build_locks.py
 tools/.db2cache/
+# Wiki tables downloaded by tools/build_recipes.py
+tools/.wikicache/
 
 # Local data (the tools keep these in Documents/ProfScan by default)
 *.db

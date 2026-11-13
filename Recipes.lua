@@ -62,7 +62,7 @@ function ns:BuildRecipes()
       for _, r in ipairs(cat.recipes or {}) do
         local recipe = { spell = r[1], item = r[2], skill = r[3], reagents = Pairs(r[4]),
                          yieldMin = r[5] or 1, yieldMax = r[5] or 1, yieldSource = "AtlasLoot", name = r[6],
-                         profession = p.name, category = c.name }
+                         source = r[7], profession = p.name, category = c.name }
         c.recipes[#c.recipes + 1] = recipe
         self.recipeBySpell[recipe.spell] = recipe
       end
@@ -221,9 +221,11 @@ end
 
 -- Average number of items one craft makes, including extra results from your
 -- crafting bonuses (Master Chef, Meticulous; see ns.BONUSES in Pricing.lua).
+-- A proc adds one item, not another full craft's worth: a x2 recipe makes 3
+-- (seen in game with Master Chef; Meticulous is assumed to work the same way).
 function ns.Yield(recipe)
   local base = ((recipe.yieldMin or 1) + (recipe.yieldMax or recipe.yieldMin or 1)) / 2
-  return base * (1 + ns:ExtraResultChance(recipe))
+  return base + ns:ExtraResultChance(recipe)
 end
 
 -- "x2" or "x2-4" for recipes making more than one, else "".
@@ -368,6 +370,25 @@ function ns:LockTags(recipe)
     tags[#tags + 1] = ("|cffffd100%s %s|r"):format(FACTION_SHORT[l.rep] or l.rep, STANDING_SHORT[l.standing] or "")
   end
   return table.concat(tags, " ")
+end
+
+-- How the recipe is learned (RecipeData.lua, from the wiki's Forever tables and the game's
+-- item data): "Trainer", "Vendor (BoE)", "Drop (BoP), Molten Core", ... A BoE recipe item
+-- can be bought on the AH; a BoP one only by whoever loots or buys it.
+local BIND_COLOR = { BoE = "40ff40", BoP = "ff9933", BoU = "66ccff" }
+function ns:SourceText(recipe)
+  local s = recipe and recipe.source
+  if not s then return nil end
+  s = s:gsub("Bo[EPU]", function(b) return "|cff" .. BIND_COLOR[b] .. b .. "|r|cffffffff" end)
+  return "Learned from: |cffffffff" .. s .. "|r"
+end
+
+-- The source line, then the lock lines.
+function ns:RecipeInfoLines(recipe, withInfo)
+  local lines = self:LockLines(recipe, withInfo)
+  local source = self:SourceText(recipe)
+  if source then table.insert(lines, 1, source) end
+  return lines
 end
 
 -- Full explanation lines (tooltips, recipe view). withInfo adds common stations and tools.

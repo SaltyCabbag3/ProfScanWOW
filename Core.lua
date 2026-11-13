@@ -52,6 +52,7 @@ local DEFAULTS = {
   lockOff = {},
   lockRepMine = false,     -- reputation recipes only where this character has the standing
   profitGoal = {},         -- [profession] = copper to earn: recipes are priced for the crafts it takes
+  -- viewAH: "Alliance" | "Horde" | "Neutral" = always show that auction house's prices; unset = auto
 }
 
 -- Marks the window as needing a redraw (UI.lua checks this flag).
@@ -97,7 +98,7 @@ function ns:PLAYER_LOGIN()
   for _, id in ipairs(self.items) do GetItemInfo(id) end
   for _, id in ipairs(self.db.settings.focus) do GetItemInfo(id) end
   for _, id in ipairs(self.focusItems) do GetItemInfo(id) end
-  self.ahKey = self:CurrentAHKey()
+  self:UpdateAHView()
   self:LoadData()
 end
 
@@ -272,10 +273,70 @@ function ns:RemoveFromScanList(id)
   self.Print((self:ItemName(id) or id) .. " removed from the scan list.")
 end
 
--- Which auction house the data belongs to. History is kept per key, so
--- prices from different realms or factions never mix.
-function ns:CurrentAHKey()
-  return GetRealmName() .. "-" .. (UnitFactionGroup("player") or "Neutral")
+-- Auction houses ---------------------------------------------------------------------------
+-- History is kept per auction house key, "<realm>-Alliance", "<realm>-Horde" or
+-- "<realm>-Neutral" (the goblin ones in Booty Bay, Gadgetzan and Everlook, shared
+-- by both factions), so their prices never mix. Two keys are in use:
+--   ns.openKey  the auction house open now: scans and watch polls are stored under it;
+--   ns.ahKey    the one whose prices ProfScan shows and prices recipes with:
+--               settings.viewAH ("Alliance" | "Horde" | "Neutral"), or when that is
+--               unset (auto) the one open now, else your own faction's.
+-- Scans made at a goblin auction house before this split are under your faction's key.
+
+ns.AH_FACTIONS = { "Alliance", "Horde", "Neutral" }
+ns.AH_NAMES = { Alliance = "Alliance", Horde = "Horde", Neutral = "Goblin" }
+
+function ns:AHKey(faction)
+  return GetRealmName() .. "-" .. faction
+end
+
+-- "Alliance" | "Horde" | "Neutral" for a key.
+function ns.AHFaction(key)
+  return key and key:match("%-(%a+)$")
+end
+
+-- The player's own faction's auction house ("Neutral" for a character without a faction yet).
+function ns:OwnAHFaction()
+  local f = UnitFactionGroup("player")
+  return (f == "Alliance" or f == "Horde") and f or "Neutral"
+end
+
+-- Which auction house was just opened: the auctioneer's faction, or Neutral in the
+-- zones of the goblin auction houses, which have no faction one.
+local NEUTRAL_MAPS = { [1434] = true, [1446] = true, [1452] = true } -- Stranglethorn Vale, Tanaris, Winterspring
+function ns:OpenAHFaction()
+  local npc = UnitExists("npc") and UnitFactionGroup("npc")
+  if npc == "Alliance" or npc == "Horde" then return npc end
+  local map = C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
+  if map and NEUTRAL_MAPS[map] then return "Neutral" end
+  return self:OwnAHFaction()
+end
+
+-- Sets ns.ahKey from settings.viewAH and the open auction house; redraws when it changed.
+function ns:UpdateAHView()
+  local pick = self.db.settings.viewAH
+  local key = self:AHKey(pick or self.AHFaction(self.openKey) or self:OwnAHFaction())
+  if key ~= self.ahKey then
+    self.ahKey = key
+    self:NotifyChanged()
+  end
+end
+
+-- Cycles the shown auction house: auto -> Alliance -> Horde -> Goblin -> auto (back = reverse).
+function ns:CycleAHView(back)
+  local order = { false, "Alliance", "Horde", "Neutral" }
+  local cur = 1
+  for i, f in ipairs(order) do
+    if f == (self.db.settings.viewAH or false) then cur = i end
+  end
+  local nextPick = order[(cur - 1 + (back and -1 or 1)) % #order + 1]
+  self.db.settings.viewAH = nextPick or nil
+  self:UpdateAHView()
+end
+
+-- The auction house's cut of a sale: 5%, and 15% at the goblin ones (as in Classic).
+function ns:AHCut(key)
+  return self.AHFaction(key or self.ahKey) == "Neutral" and 0.15 or 0.05
 end
 
 function ns:ItemName(id)

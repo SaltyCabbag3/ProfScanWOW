@@ -76,15 +76,21 @@ ns.RECIPE_LOCKS = {
   [3493] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Jade Serpentblade
   [3494] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Solid Iron Maul
   [3495] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Golden Iron Destroyer
+  [3496] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Moonsteel Broadsword
   [3497] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Frost Tiger Blade
   [3498] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Massive Iron Axe
   [3500] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Shadow Crescent Axe
   [3501] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Green Iron Bracers
   [3502] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Green Iron Helm
+  [3503] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Golden Scale Coif
   [3504] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Green Iron Shoulders
+  [3505] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Golden Scale Shoulders
   [3506] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Green Iron Leggings
+  [3507] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Golden Scale Leggings
   [3508] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Green Iron Hauberk
+  [3511] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Golden Scale Cuirass
   [3513] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Polished Steel Boots
+  [3515] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Golden Scale Boots
   [3569] = { station = "Forge" }, -- Smelt Steel
   [3778] = { station = "Tanning Rack" }, -- Gem-studded Leather Belt
   [3862] = { station = "Spinning Wheel" }, -- Icy Cloak
@@ -242,6 +248,7 @@ ns.RECIPE_LOCKS = {
   [11473] = { station = "Fermenter" }, -- Ghost Dye
   [11479] = { cd = 3600, tools = "Philosopher's Stone" }, -- Transmute: Iron to Gold
   [11480] = { cd = 3600, tools = "Philosopher's Stone" }, -- Transmute: Mithril to Truesilver
+  [11643] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Golden Scale Gauntlets
   [12067] = { station = "Spinning Wheel" }, -- Dreamweave Gloves
   [12070] = { station = "Spinning Wheel" }, -- Dreamweave Vest
   [12092] = { station = "Spinning Wheel" }, -- Dreamweave Circlet
@@ -677,7 +684,7 @@ ns.RECIPE_LOCKS = {
   [25079] = { tools = "Runed Arcanite Rod" }, -- Enchant Gloves - Healing Power
   [25080] = { tools = "Runed Arcanite Rod" }, -- Enchant Gloves - Superior Agility
   [25081] = { tools = "Runed Arcanite Rod", rep = "Cenarion Circle", repID = 609, standing = 5 }, -- Enchant Cloak - Greater Fire Resistance
-  [25082] = { tools = "Runed Arcanite Rod", rep = "Cenarion Circle", repID = 609, standing = 6 }, -- Enchant Cloak - Greater Nature Resistance
+  [25082] = { tools = "Runed Arcanite Rod", rep = "Thorium Brotherhood", repID = 59, standing = 6 }, -- Enchant Cloak - Greater Nature Resistance
   [25083] = { tools = "Runed Arcanite Rod" }, -- Enchant Cloak - Stealth
   [25084] = { tools = "Runed Arcanite Rod" }, -- Enchant Cloak - Subtlety
   [25086] = { tools = "Runed Arcanite Rod" }, -- Enchant Cloak - Dodge
@@ -739,13 +746,6 @@ ns.RECIPE_LOCKS = {
   [435960] = { tools = "Arclight Spanner" }, -- Hyperconductive Goldwrap
   [435964] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- High-Yield Radiation Bomb
   [435966] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Ez-Thro Radiation Bomb
-  [439120] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Golden Scale Gauntlets (Phase 2)
-  [439122] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Golden Scale Boots (Phase 2)
-  [439124] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Golden Scale Cuirass (Phase 2)
-  [439126] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Golden Scale Coif (Phase 2)
-  [439128] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Moonsteel Broadsword (Phase 2)
-  [439130] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Golden Scale Shoulders (Phase 2)
-  [439132] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Golden Scale Leggings (Phase 2)
   [439134] = { tools = "Runed Golden Rod" }, -- Greater Mystic Wand
   [439156] = { tools = "Runed Golden Rod" }, -- Sigil of Innovation (Phase 2)
   [446179] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Shoulderplates of Dread (Phase 3)
@@ -755,4 +755,591 @@ ns.RECIPE_LOCKS = {
   [446238] = { tools = "Arclight Spanner" }, -- Void-Powered Protector's Vambraces
   [446243] = { tools = "Runed Truesilver Rod" }, -- Sigil of Living Dreams (Phase 3)
   [448624] = { tools = "Runed Silver Rod" }, -- Scroll of Spatial Mending (Phase 3)
+  [1225758] = { station = "Cooking Fire" }, -- Prowler Steak
+  [1225759] = { station = "Cooking Fire" }, -- Filet o' Flank
+  [1225760] = { station = "Cooking Fire" }, -- Sunrise Omelette
+  [1248458] = { tools = "Runed Copper Rod" }, -- Enchant Bracer - Minor Intellect
+  [1248459] = { tools = "Runed Copper Rod" }, -- Enchant Bracer - Minor Healing Power
+  [1248460] = { tools = "Runed Silver Rod" }, -- Enchant Bracer - Lesser Agility
+  [1248461] = { tools = "Runed Golden Rod" }, -- Twisted Nether Wand
+  [1248497] = { tools = "Runed Golden Rod" }, -- Enchant Bracer - Agility
+  [1248498] = { tools = "Runed Truesilver Rod" }, -- Enchant Bracer - Lesser Healing Power
+  [1248500] = { tools = "Runed Truesilver Rod" }, -- Enchant Bracer - Greater Agility
+  [1248505] = { tools = "Runed Truesilver Rod" }, -- Lesser Eternal Wand
+  [1248509] = { tools = "Runed Truesilver Rod" }, -- Dreambough Wand
+  [1248510] = { tools = "Runed Truesilver Rod" }, -- Enchant 2H Weapon - Lesser Agility
+  [1248511] = { tools = "Runed Truesilver Rod" }, -- Enchant 2H Weapon - Lesser Strength
+  [1248515] = { tools = "Runed Truesilver Rod" }, -- Greater Eternal Wand
+  [1248528] = { tools = "Runed Truesilver Rod" }, -- Enchant Gloves - Advanced Skinning
+  [1248599] = { tools = "Runed Truesilver Rod" }, -- Enchant Bracer - Superior Agility
+  [1248607] = { tools = "Runed Arcanite Rod" }, -- Enchant 2H Weapon - Mighty Spell Power
+  [1248636] = { tools = "Runed Arcanite Rod" }, -- Enchant 2H Weapon - Mighty Healing Power
+  [1248640] = { tools = "Runed Arcanite Rod" }, -- Enchant Gloves - Superior Strength
+  [1248645] = { tools = "Runed Arcanite Rod" }, -- Enchant Gloves - Natural Power
+  [1248650] = { station = "Arcane Forge", tools = "Runed Arcanite Rod" }, -- Brilliant Wand
+  [1248661] = { tools = "Runed Truesilver Rod" }, -- Enchant Bracer - Superior Intellect
+  [1248665] = { tools = "Runed Truesilver Rod" }, -- Enchant Bracer - Superior Deflection
+  [1248668] = { tools = "Runed Arcanite Rod" }, -- Enchant 2H Weapon - Strength
+  [1248703] = { tools = "Runed Silver Rod" }, -- Glimmering Staff
+  [1248739] = { tools = "Runed Silver Rod" }, -- Soulstaff
+  [1248745] = { tools = "Runed Silver Rod" }, -- Orb of Mystic Insight
+  [1248748] = { tools = "Runed Silver Rod" }, -- Orb of Souls
+  [1248752] = { tools = "Runed Silver Rod" }, -- Mystic Mushroom
+  [1248754] = { tools = "Runed Silver Rod" }, -- Tenets of the Silver Hand
+  [1248755] = { tools = "Runed Silver Rod" }, -- Polished Driftwood Icon
+  [1248757] = { tools = "Runed Silver Rod" }, -- Enchant Weapon - Insight
+  [1248760] = { tools = "Runed Silver Rod" }, -- Enchant Weapon - Recovery
+  [1248805] = { tools = "Runed Silver Rod" }, -- Enchant Weapon - Revelation
+  [1248974] = { tools = "Runed Silver Rod" }, -- Talons of Wrath
+  [1249006] = { tools = "Runed Silver Rod" }, -- Libram of Invocation
+  [1249015] = { tools = "Runed Silver Rod" }, -- Totem of Ancestral Protection
+  [1249019] = { tools = "Runed Truesilver Rod" }, -- Enchant Necklace - Strength
+  [1249057] = { tools = "Runed Truesilver Rod" }, -- Enchant Necklace - Spell Power
+  [1249058] = { tools = "Runed Truesilver Rod" }, -- Enchant Necklace - Healing Power
+  [1249059] = { tools = "Runed Truesilver Rod" }, -- Enchant Necklace - Agility
+  [1249060] = { tools = "Runed Truesilver Rod" }, -- Enchant Necklace - Deflection
+  [1249061] = { tools = "Runed Silver Rod" }, -- Radiant Staff
+  [1249064] = { tools = "Runed Silver Rod" }, -- Dreamstaff
+  [1249069] = { tools = "Runed Silver Rod" }, -- Truesilver Conduit
+  [1249070] = { tools = "Runed Silver Rod" }, -- Twisting Essence Jar
+  [1249071] = { tools = "Runed Silver Rod" }, -- Enchant Chest - Absorption
+  [1249107] = { station = "Black Forge" }, -- Frozen Heart of the Mountain
+  [1249112] = { station = "Black Forge" }, -- Molten Heart of the Mountain
+  [1249114] = { station = "Black Forge" }, -- Dormant Heart of the Mountain
+  [1249128] = { station = "Arcane Forge", tools = "Runed Arcanite Rod" }, -- Idol of the Dream
+  [1249152] = { station = "Arcane Forge", tools = "Runed Arcanite Rod" }, -- Libram of Holy Alacrity
+  [1249154] = { station = "Arcane Forge", tools = "Runed Arcanite Rod" }, -- Totem of Thunder
+  [1249957] = { station = "Cooking Fire" }, -- Peace Tea
+  [1249958] = { station = "Cooking Fire" }, -- Royal Tea
+  [1249959] = { station = "Cooking Fire" }, -- Root Tea
+  [1249960] = { station = "Cooking Fire" }, -- Triage Tea
+  [1249961] = { station = "Cooking Fire" }, -- Sunny Tea
+  [1249962] = { station = "Cooking Fire" }, -- Sage's Tea
+  [1249963] = { station = "Cooking Fire" }, -- Venomous Smoothie
+  [1249964] = { station = "Cooking Fire" }, -- Slimy Smoothie
+  [1249965] = { station = "Cooking Fire" }, -- Mrrggl Smrrthle
+  [1249966] = { station = "Cooking Fire" }, -- Calcified Smoothie
+  [1249967] = { station = "Cooking Fire" }, -- Spicy Smoothie
+  [1249968] = { station = "Cooking Fire" }, -- Wicked Smoothie
+  [1250142] = { station = "Cooking Fire" }, -- Savory Stag Sliders
+  [1250143] = { station = "Iron Oven" }, -- Soaring Pamplona
+  [1250144] = { station = "Iron Oven" }, -- Bat Hachee
+  [1250145] = { station = "Iron Oven" }, -- Savory Turtle Stew
+  [1250146] = { station = "Iron Oven" }, -- Flank au Poivre
+  [1250147] = { station = "Iron Oven" }, -- Bear Bruscitti
+  [1250148] = { station = "Iron Oven" }, -- Steaming Stag Steak
+  [1250149] = { station = "Iron Oven" }, -- Swiftstrike Steak
+  [1250150] = { station = "Cooking Fire" }, -- Raging Raptor Ribs
+  [1250151] = { station = "Cooking Fire" }, -- Bear Brisket
+  [1250152] = { station = "Iron Oven" }, -- Prehistoric Pulled Raptor
+  [1250153] = { station = "Cooking Fire" }, -- Raptor Rouladen
+  [1250154] = { station = "Cooking Fire" }, -- Twice-Spiced Raptor Slice
+  [1250155] = { station = "Cooking Fire" }, -- Giant Scrambled Eggs
+  [1250156] = { station = "Cooking Fire" }, -- Tasty Raptor Bites
+  [1250157] = { station = "Cooking Fire" }, -- Breakfast Omelette
+  [1250158] = { station = "Iron Oven" }, -- Clam Linguine
+  [1252229] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Gemmed Copper Boots
+  [1252230] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Strange Copper Boots
+  [1252231] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Glowing Copper Boots
+  [1252232] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Sterling Silver Boots
+  [1252233] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Sterling Silver Leggings
+  [1252234] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Sterling Silver Gauntlet
+  [1252235] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Sterling Silver Shoulders
+  [1252236] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Sterling Silver Breastplate
+  [1252237] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Veteran's Chain Shirt
+  [1252238] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Guard's Chain Shirt
+  [1252239] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Protector's Chain Shirt
+  [1252240] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Acolyte's Chain Shirt
+  [1252241] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Crusader's Chain Shirt
+  [1252242] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Veteran's Chain Leggings
+  [1252243] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Guard's Chain Leggings
+  [1252244] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Protector's Chain Leggings
+  [1252245] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Acolyte's Chain Leggings
+  [1252246] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Crusader's Chain Leggings
+  [1252247] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Veteran's Chain Helm
+  [1252248] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Guard's Chain Helm
+  [1252249] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Protector's Chain Helm
+  [1252250] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Acolyte's Chain Helm
+  [1252251] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Crusader's Chain Helm
+  [1252252] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Veteran's Boots
+  [1252253] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Guard's Boots
+  [1252254] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Protector's Boots
+  [1252255] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Acolyte's Boots
+  [1252256] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Crusader's Boots
+  [1252257] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Veteran's Gloves
+  [1252258] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Guard's Gloves
+  [1252259] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Protector's Gloves
+  [1252260] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Acolyte's Gloves
+  [1252261] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Crusader's Gloves
+  [1252262] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Veteran's Chain Belt
+  [1252263] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Guard's Chain Belt
+  [1252264] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Protector's Chain Belt
+  [1252265] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Acolyte's Chain Belt
+  [1252266] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Crusader's Chain Belt
+  [1252267] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Veteran's Silvered Chain Shirt
+  [1252268] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Guard's Silvered Chain Shirt
+  [1252269] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Protector's Silvered Chain Shirt
+  [1252270] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Acolyte's Silvered Chain Shirt
+  [1252271] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Crusader's Silvered Chain Shirt
+  [1252272] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Veteran's Silvered Chain Leggings
+  [1252273] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Guard's Silvered Chain Leggings
+  [1252274] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Protector's Silvered Chain Leggings
+  [1252275] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Acolyte's Silvered Chain Leggings
+  [1252276] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Crusader's Silvered Chain Leggings
+  [1252277] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Veteran's Silvered Chain Helm
+  [1252278] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Guard's Silvered Chain Helm
+  [1252279] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Protector's Silvered Chain Helm
+  [1252280] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Acolyte's Silvered Chain Helm
+  [1252281] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Crusader's Silvered Chain Helm
+  [1252282] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Hard Gold Cuirass
+  [1252283] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Hard Gold Boots
+  [1252284] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Hard Gold Bracers
+  [1252285] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Hard Gold Leggings
+  [1252286] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Hard Gold Coif
+  [1252287] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Hard Gold Gauntlet
+  [1252288] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Hard Gold Pauldrons
+  [1252289] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Shining Mithril Breastplate
+  [1252290] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Shining Mithril Pauldrons
+  [1252291] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Shining Mithril Boots
+  [1252292] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Shining Mithril Helm
+  [1252293] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Shining Mithril Pants
+  [1252294] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Shining Mithril Gauntlet
+  [1252295] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Officer's Boots
+  [1252296] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Sentinel's Boots
+  [1252297] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Warder's Boots
+  [1252298] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Prefect's Boots
+  [1252299] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Justicar's Boots
+  [1252300] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Officer's Gloves
+  [1252301] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Sentinel's Gloves
+  [1252302] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Warder's Gloves
+  [1252303] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Prefect's Gloves
+  [1252304] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Justicar's Gloves
+  [1252305] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Officer's Belt
+  [1252306] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Sentinel's Belt
+  [1252307] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Warder's Belt
+  [1252308] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Prefect's Belt
+  [1252309] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Justicar's Belt
+  [1252310] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Officer's Sabatons
+  [1252311] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Sentinel's Sabatons
+  [1252312] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Warder's Sabatons
+  [1252313] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Prefect's Sabatons
+  [1252314] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Justicar's Sabatons
+  [1252315] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Officer's Gauntlet
+  [1252316] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Sentinel's Gauntlet
+  [1252317] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Warder's Gauntlet
+  [1252318] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Prefect's Gauntlet
+  [1252319] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Justicar's Gauntlet
+  [1252320] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Officer's Waistguard
+  [1252321] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Sentinel's Waistguard
+  [1252322] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Warder's Waistguard
+  [1252323] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Prefect's Waistguard
+  [1252324] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Justicar's Waistguard
+  [1252325] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Officer's Pauldrons
+  [1252326] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Sentinel's Pauldrons
+  [1252327] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Warder's Pauldrons
+  [1252328] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Prefect's Pauldrons
+  [1252329] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Justicar's Pauldrons
+  [1252330] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Officer's Wristguards
+  [1252331] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Sentinel's Wristguards
+  [1252332] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Warder's Wristguards
+  [1252333] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Prefect's Wristguards
+  [1252334] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Justicar's Wristguards
+  [1252335] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Blessed Plate Pauldrons
+  [1252336] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Blessed Plate Boots
+  [1252337] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Blessed Plate Gauntlet
+  [1252338] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Imperial Plate Gauntlets
+  [1252339] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Blessed Plate Bracers
+  [1252340] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Blessed Plate Leggings
+  [1252341] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Blessed Plate Belt
+  [1252342] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Blessed Plate Helm
+  [1252343] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Blessed Plate Chest
+  [1252344] = { station = "Master Forge", tools = "Blacksmith Hammer" }, -- Enriched Thorium Breastplate
+  [1252345] = { station = "Master Forge", tools = "Blacksmith Hammer" }, -- Enriched Thorium Leggings
+  [1252346] = { station = "Master Forge", tools = "Blacksmith Hammer" }, -- Enriched Thorium Helm
+  [1252347] = { station = "Master Forge", tools = "Blacksmith Hammer" }, -- Champion's Legplates
+  [1252348] = { station = "Master Forge", tools = "Blacksmith Hammer" }, -- Stalwart Helm
+  [1252349] = { station = "Master Forge", tools = "Blacksmith Hammer" }, -- Martyr's Legplates
+  [1252350] = { station = "Master Forge", tools = "Blacksmith Hammer" }, -- Breastplate of Salvation
+  [1252351] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Brass Knuckles
+  [1252352] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Bronze Dory
+  [1252353] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Iron Fists
+  [1252354] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Steel Spear
+  [1252355] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Iron Morningstar
+  [1252356] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Mithril Shortsword
+  [1252357] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Mithril Warhammer
+  [1252358] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Mithril Claws
+  [1252359] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Mithril Claymore
+  [1252360] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Mithril Stiletto
+  [1252361] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Charged Mithril Battleaxe
+  [1252362] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Thorium Greatmace
+  [1252363] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Thorium Cestus
+  [1252364] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Thorium Poleaxe
+  [1252365] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Bold Dirk
+  [1252366] = { station = "Master Forge", tools = "Blacksmith Hammer", rep = "Timbermaw Hold", repID = 576, standing = 7 }, -- Stormcarver
+  [1252367] = { station = "Master Forge", tools = "Blacksmith Hammer", rep = "Timbermaw Hold", repID = 576, standing = 7 }, -- Bagh Nakh
+  [1252368] = { station = "Master Forge", tools = "Blacksmith Hammer" }, -- Legionite Glaive
+  [1252566] = { station = "Cooking Fire" }, -- Savory Whimsyfin Delight
+  [1254967] = { station = "Sewing Machine" }, -- Pristine Scorpid Leggings
+  [1254968] = { station = "Sewing Machine" }, -- Black Dragonscale Helm
+  [1254969] = { station = "Sewing Machine" }, -- Blue Dragonscale Helm
+  [1254970] = { station = "Sewing Machine" }, -- Red Dragonscale Leggings
+  [1255000] = { station = "Tanning Rack" }, -- Mender's Mail Bracers
+  [1255001] = { station = "Tanning Rack" }, -- Skirmisher's Mail Bracers
+  [1255002] = { station = "Tanning Rack" }, -- Skycaller's Mail Bracers
+  [1255003] = { station = "Tanning Rack" }, -- Stalker's Mail Bracers
+  [1255004] = { station = "Tanning Rack" }, -- Mender's Mail Shoulders
+  [1255005] = { station = "Tanning Rack" }, -- Skirmisher's Mail Shoulders
+  [1255006] = { station = "Tanning Rack" }, -- Skycaller's Mail Shoulders
+  [1255007] = { station = "Tanning Rack" }, -- Stalker's Mail Shoulders
+  [1255008] = { station = "Tanning Rack" }, -- Mender's Mail Boots
+  [1255009] = { station = "Tanning Rack" }, -- Skirmisher's Mail Boots
+  [1255010] = { station = "Tanning Rack" }, -- Skycaller's Mail Boots
+  [1255011] = { station = "Tanning Rack" }, -- Stalker's Mail Boots
+  [1255012] = { station = "Sewing Machine" }, -- Ironfeather Leggings
+  [1255013] = { station = "Sewing Machine" }, -- Warbear Helm
+  [1255014] = { station = "Sewing Machine" }, -- Timbermaw Tunic
+  [1255015] = { station = "Sewing Machine" }, -- Dawn Armor
+  [1255016] = { station = "Sewing Machine" }, -- Living Crown
+  [1255017] = { station = "Sewing Machine" }, -- Blue Suede Hat
+  [1255060] = { station = "Tanning Rack" }, -- Mender's Leather Shoes
+  [1255061] = { station = "Tanning Rack" }, -- Skycaller's Leather Shoes
+  [1255062] = { station = "Tanning Rack" }, -- Warden's Leather Shoes
+  [1255063] = { station = "Tanning Rack" }, -- Skulker's Leather Shoes
+  [1255064] = { station = "Tanning Rack" }, -- Prowler's Leather Shoes
+  [1255065] = { station = "Tanning Rack" }, -- Mender's Leather Gloves
+  [1255066] = { station = "Tanning Rack" }, -- Skycaller's Leather Gloves
+  [1255067] = { station = "Tanning Rack" }, -- Skirmisher's Leather Gloves
+  [1255068] = { station = "Tanning Rack" }, -- Warden's Leather Gloves
+  [1255069] = { station = "Tanning Rack" }, -- Stalker's Leather Gloves
+  [1255070] = { station = "Tanning Rack" }, -- Skulker's Leather Gloves
+  [1255071] = { station = "Tanning Rack" }, -- Prowler's Leather Gloves
+  [1255075] = { station = "Tanning Rack" }, -- Mender's Leather Belt
+  [1255076] = { station = "Tanning Rack" }, -- Skycaller's Leather Belt
+  [1255077] = { station = "Tanning Rack" }, -- Skirmisher's Leather Belt
+  [1255078] = { station = "Tanning Rack" }, -- Warden's Leather Belt
+  [1255079] = { station = "Tanning Rack" }, -- Stalker's Leather Belt
+  [1255080] = { station = "Tanning Rack" }, -- Skulker's Leather Belt
+  [1255081] = { station = "Tanning Rack" }, -- Prowler's Leather Belt
+  [1255082] = { station = "Tanning Rack" }, -- Wisdom's Leather Leggings
+  [1255083] = { station = "Tanning Rack" }, -- Stormrider's Leather Kilt
+  [1255084] = { station = "Tanning Rack" }, -- Totemic Leather Leggings
+  [1255085] = { station = "Tanning Rack" }, -- Defender's Leather Kilt
+  [1255086] = { station = "Tanning Rack" }, -- Trapper's Leather Legguards
+  [1255087] = { station = "Tanning Rack" }, -- Brawler's Leather Legguards
+  [1257419] = { station = "Spinning Wheel" }, -- Pristine Leggings
+  [1257420] = { station = "Spinning Wheel" }, -- Silky Leggings
+  [1257421] = { station = "Spinning Wheel" }, -- Flame Leggings
+  [1257422] = { station = "Spinning Wheel" }, -- Shadow Leggings
+  [1257423] = { station = "Spinning Wheel" }, -- Pearly Leggings
+  [1257424] = { station = "Spinning Wheel" }, -- Shining Leggings
+  [1257426] = { station = "Spinning Wheel" }, -- Gilded Slippers
+  [1257427] = { station = "Spinning Wheel" }, -- Frothing Slippers
+  [1257428] = { station = "Spinning Wheel" }, -- Fiery Slippers
+  [1257429] = { station = "Spinning Wheel" }, -- Black Slippers
+  [1257430] = { station = "Spinning Wheel" }, -- Golden Slippers
+  [1257431] = { station = "Spinning Wheel" }, -- Radiant Slippers
+  [1257436] = { station = "Spinning Wheel" }, -- Gilded Handwraps
+  [1257437] = { station = "Spinning Wheel" }, -- Frothing Handwraps
+  [1257438] = { station = "Spinning Wheel" }, -- Fiery Handwraps
+  [1257439] = { station = "Spinning Wheel" }, -- Black Handwraps
+  [1257440] = { station = "Spinning Wheel" }, -- Golden Handwraps
+  [1257441] = { station = "Spinning Wheel" }, -- Radiant Handwraps
+  [1257444] = { station = "Spinning Wheel" }, -- Gilded Cord
+  [1257445] = { station = "Spinning Wheel" }, -- Frothing Cord
+  [1257446] = { station = "Spinning Wheel" }, -- Fiery Cord
+  [1257447] = { station = "Spinning Wheel" }, -- Black Cord
+  [1257448] = { station = "Spinning Wheel" }, -- Golden Cord
+  [1257449] = { station = "Spinning Wheel" }, -- Radiant Cord
+  [1257450] = { station = "Spinning Wheel" }, -- Nethergeld Shoulders
+  [1257451] = { station = "Spinning Wheel" }, -- Netherfroth Shoulders
+  [1257452] = { station = "Spinning Wheel" }, -- Netherflame Shoulders
+  [1257453] = { station = "Spinning Wheel" }, -- Netherpearl Shoulders
+  [1257454] = { station = "Spinning Wheel" }, -- Nethershine Shoulders
+  [1257455] = { station = "Spinning Wheel" }, -- Netherlight Shoulders
+  [1257456] = { station = "Spinning Wheel" }, -- Nethergeld Cuffs
+  [1257457] = { station = "Spinning Wheel" }, -- Netherfroth Cuffs
+  [1257458] = { station = "Spinning Wheel" }, -- Netherflame Cuffs
+  [1257459] = { station = "Spinning Wheel" }, -- Netherpearl Cuffs
+  [1257460] = { station = "Spinning Wheel" }, -- Nethershine Cuffs
+  [1257461] = { station = "Spinning Wheel" }, -- Netherlight Cuffs
+  [1257466] = { station = "Spinning Wheel" }, -- Gilded Waistcord
+  [1257467] = { station = "Spinning Wheel" }, -- Frothing Waistcord
+  [1257468] = { station = "Spinning Wheel" }, -- Fiery Waistcord
+  [1257469] = { station = "Spinning Wheel" }, -- Black Waistcord
+  [1257470] = { station = "Spinning Wheel" }, -- Golden Waistcord
+  [1257471] = { station = "Spinning Wheel" }, -- Radiant Waistcord
+  [1257473] = { station = "Spinning Wheel" }, -- Gilded Gloves
+  [1257474] = { station = "Spinning Wheel" }, -- Frothing Gloves
+  [1257475] = { station = "Spinning Wheel" }, -- Fiery Gloves
+  [1257476] = { station = "Spinning Wheel" }, -- Black Gloves
+  [1257477] = { station = "Spinning Wheel" }, -- Golden Gloves
+  [1257478] = { station = "Spinning Wheel" }, -- Radiant Gloves
+  [1257479] = { station = "Spinning Wheel" }, -- Gilded Sandals
+  [1257480] = { station = "Spinning Wheel" }, -- Frothing Sandals
+  [1257481] = { station = "Spinning Wheel" }, -- Fiery Sandals
+  [1257482] = { station = "Spinning Wheel" }, -- Black Sandals
+  [1257483] = { station = "Spinning Wheel" }, -- Golden Sandals
+  [1257484] = { station = "Spinning Wheel" }, -- Radiant Sandals
+  [1257495] = { station = "Loom" }, -- Bottomless Reagent Bag
+  [1263034] = { tools = "Arclight Spanner" }, -- Repair Bot
+  [1263056] = { tools = "Runed Truesilver Rod" }, -- Arcane Salvager
+  [1263083] = { tools = "Arclight Spanner" }, -- Anarchist's Workbench
+  [1266906] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- SAF-T Copper Bomb
+  [1266908] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- EZ-Thro Copper Bomb XL
+  [1266910] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- SAF-T Bronze Bomb
+  [1266912] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- SAF-T Bell
+  [1266913] = { station = "Anvil", tools = "Blacksmith Hammer, Arclight Spanner" }, -- Shafety Sheep
+  [1266914] = { station = "Anvil", tools = "Blacksmith Hammer, Arclight Spanner" }, -- EZ-Thro Fireproof Fuse
+  [1266915] = { station = "Anvil", tools = "Blacksmith Hammer, Arclight Spanner" }, -- EZ-Thro Bronze Mortar
+  [1266916] = { station = "Anvil", tools = "Blacksmith Hammer, Arclight Spanner" }, -- EZ-Thro Grenade
+  [1266917] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- SAF-T Casing
+  [1266918] = { station = "Anvil", tools = "Blacksmith Hammer, Arclight Spanner" }, -- SAF-T Bomb
+  [1266919] = { station = "Anvil", tools = "Blacksmith Hammer, Arclight Spanner" }, -- Emergency Field Cloak
+  [1266920] = { station = "Anvil", tools = "Blacksmith Hammer, Arclight Spanner" }, -- Compact Critter Carrier
+  [1266921] = { station = "Anvil", tools = "Blacksmith Hammer, Arclight Spanner" }, -- EZ-Thro Tru-Trigger
+  [1266923] = { tools = "Arclight Spanner, Gyromatic Micro-Adjustor" }, -- SAF-T Disposable Parachute
+  [1266924] = { station = "Anvil", tools = "Blacksmith Hammer, Arclight Spanner" }, -- Gnomish Army Knife
+  [1266925] = { station = "Anvil", tools = "Arclight Spanner, Gyromatic Micro-Adjustor" }, -- Loot-A-Rang
+  [1266926] = { station = "Anvil", tools = "Blacksmith Hammer, Arclight Spanner" }, -- SAF-T Tube
+  [1266927] = { tools = "Blacksmith Hammer" }, -- SAF-T Clever Dynamite
+  [1266928] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- EZ-Thro Shell
+  [1266929] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- EZ-Thro Thorium Grenade
+  [1266930] = { station = "Anarchist's Workbench", tools = "Blacksmith Hammer" }, -- EZ-Thro Dark Bomb
+  [1266931] = { station = "Anarchist's Workbench", tools = "Blacksmith Hammer" }, -- EZ-Thro Mana Bomb
+  [1266932] = { station = "Anarchist's Workbench", tools = "Blacksmith Hammer, Arclight Spanner" }, -- EZ-Thro Field Transporter: Gadgetzan
+  [1266933] = { station = "Anarchist's Workbench", tools = "Blacksmith Hammer, Arclight Spanner" }, -- SAF-T Emergency Ripper: Everlook
+  [1266934] = { station = "Anvil", tools = "Blacksmith Hammer, Arclight Spanner" }, -- EZ and SAF Field Transporter: Mt. Hyjal
+  [1266935] = { station = "Anvil", tools = "Arclight Spanner, Gyromatic Micro-Adjustor" }, -- Ultrasafe Rechargeable Battery
+  [1266936] = { station = "Anvil", tools = "Blacksmith Hammer, Arclight Spanner" }, -- Dimensional Transporter - Mt. Hyjal
+  [1266937] = { station = "Anvil", tools = "Arclight Spanner, Gyromatic Micro-Adjustor" }, -- Gnomish Poultryizer
+  [1266938] = { station = "Anvil", tools = "Arclight Spanner, Gyromatic Micro-Adjustor" }, -- Ultralight Goblin Glider
+  [1266939] = { station = "Anvil", tools = "Arclight Spanner, Gyromatic Micro-Adjustor" }, -- Gnomish Weather Machine NYI
+  [1266940] = { station = "Anvil", tools = "Arclight Spanner, Gyromatic Micro-Adjustor" }, -- Stealthman 52
+  [1266941] = { station = "Anarchist's Workbench", tools = "Arclight Spanner, Gyromatic Micro-Adjustor" }, -- SAF-T Nitro Boosts
+  [1266942] = { station = "Anarchist's Workbench", tools = "Arclight Spanner, Gyromatic Micro-Adjustor" }, -- EZ-Thro Magnetic Displacer
+  [1266943] = { station = "Anarchist's Workbench", tools = "Arclight Spanner, Gyromatic Micro-Adjustor" }, -- SAF-T Teleport
+  [1270633] = { station = "Cooking Fire" }, -- Skywall Souffle
+  [1270635] = { station = "Cooking Fire" }, -- Pincer Bites
+  [1283400] = { tools = "Flint and Tinder" }, -- Journeyman Campfire Kit
+  [1286792] = { station = "Anvil", tools = "Arclight Spanner, Gyromatic Micro-Adjustor" }, -- Centaur Banner Deployment Device
+  [1286796] = { tools = "Arclight Spanner, Gyromatic Micro-Adjustor" }, -- Hoof-Shaped Foot Pedal
+  [1291341] = { tools = "Flint and Tinder" }, -- Expert Campfire Kit
+  [1292920] = { station = "Sewing Machine" }, -- Grovekeeper Trousers
+  [1292921] = { station = "Sewing Machine" }, -- Grovekeeper Grips
+  [1292923] = { station = "Sewing Machine" }, -- Grovekeeper Shoulderpads
+  [1292924] = { station = "Sewing Machine" }, -- Grovekeeper Stompers
+  [1292925] = { station = "Sewing Machine" }, -- Grovekeeper Kilt
+  [1292926] = { station = "Sewing Machine" }, -- Grovekeeper Mitts
+  [1292927] = { station = "Sewing Machine" }, -- Grovekeeper Mantle
+  [1292928] = { station = "Sewing Machine" }, -- Grovekeeper Sandals
+  [1292929] = { station = "Sewing Machine" }, -- Grovekeeper Legguards
+  [1292930] = { station = "Sewing Machine" }, -- Grovekeeper Handguards
+  [1292931] = { station = "Sewing Machine" }, -- Grovekeeper Pauldrons
+  [1292932] = { station = "Sewing Machine" }, -- Grovekeeper Boots
+  [1292933] = { station = "Sewing Machine" }, -- Grovekeeper Leggings
+  [1292934] = { station = "Sewing Machine" }, -- Grovekeeper Gauntlets
+  [1292935] = { station = "Sewing Machine" }, -- Grovekeeper Spaulders
+  [1292936] = { station = "Sewing Machine" }, -- Grovekeeper Treads
+  [1292937] = { station = "Sewing Machine" }, -- Wildstalker's Legguards
+  [1292938] = { station = "Sewing Machine" }, -- Wildstalker's Gauntlets
+  [1292939] = { station = "Sewing Machine" }, -- Wildstalker's Spaulders
+  [1292940] = { station = "Sewing Machine" }, -- Wildstalker's Greaves
+  [1292941] = { station = "Loom" }, -- Manaflare Pants
+  [1292942] = { station = "Loom" }, -- Manaflare Gloves
+  [1292943] = { station = "Loom" }, -- Manaflare Mantle
+  [1292944] = { station = "Loom" }, -- Manaflare Boots
+  [1292945] = { station = "Master Forge", tools = "Blacksmith Hammer" }, -- Justice Leggings
+  [1292946] = { station = "Master Forge", tools = "Blacksmith Hammer" }, -- Justice Gauntlets
+  [1292947] = { station = "Master Forge", tools = "Blacksmith Hammer" }, -- Justice Spaulders
+  [1292948] = { station = "Master Forge", tools = "Blacksmith Hammer" }, -- Justice Greaves
+  [1292949] = { station = "Master Forge", tools = "Blacksmith Hammer" }, -- Justice Legplates
+  [1292950] = { station = "Master Forge", tools = "Blacksmith Hammer" }, -- Justice Gloves
+  [1292951] = { station = "Master Forge", tools = "Blacksmith Hammer" }, -- Justice Epaulets
+  [1292952] = { station = "Master Forge", tools = "Blacksmith Hammer" }, -- Justice Treads
+  [1292953] = { station = "Master Forge", tools = "Blacksmith Hammer" }, -- Justice Legguards
+  [1292954] = { station = "Master Forge", tools = "Blacksmith Hammer" }, -- Justice Handguards
+  [1292955] = { station = "Master Forge", tools = "Blacksmith Hammer" }, -- Justice Pauldrons
+  [1292956] = { station = "Master Forge", tools = "Blacksmith Hammer" }, -- Justice Sabatons
+  [1292957] = { station = "Loom" }, -- Pants of Conviction
+  [1292958] = { station = "Loom" }, -- Gloves of Conviction
+  [1292959] = { station = "Loom" }, -- Mantle of Conviction
+  [1292960] = { station = "Loom" }, -- Treads of Conviction
+  [1292961] = { station = "Loom" }, -- Leggings of Conviction
+  [1292962] = { station = "Loom" }, -- Handguards of Conviction
+  [1292963] = { station = "Loom" }, -- Pauldrons of Conviction
+  [1292964] = { station = "Loom" }, -- Boots of Conviction
+  [1292965] = { station = "Sewing Machine" }, -- Grimstitch Pants
+  [1292966] = { station = "Sewing Machine" }, -- Grimstitch Gloves
+  [1292967] = { station = "Sewing Machine" }, -- Grimstitch Spaulders
+  [1292968] = { station = "Sewing Machine" }, -- Grimstitch Boots
+  [1292969] = { station = "Sewing Machine" }, -- Spiritcaller Leggings
+  [1292970] = { station = "Sewing Machine" }, -- Spiritcaller Grips
+  [1292971] = { station = "Sewing Machine" }, -- Spiritcaller Spaulders
+  [1292972] = { station = "Sewing Machine" }, -- Spiritcaller Treads
+  [1292973] = { station = "Sewing Machine" }, -- Spiritcaller Pants
+  [1292974] = { station = "Sewing Machine" }, -- Spiritcaller Gauntlets
+  [1292975] = { station = "Sewing Machine" }, -- Spiritcaller Epaulets
+  [1292976] = { station = "Sewing Machine" }, -- Spiritcaller Greaves
+  [1292977] = { station = "Loom" }, -- Demonheart Leggings
+  [1292978] = { station = "Loom" }, -- Demonheart Gloves
+  [1292979] = { station = "Loom" }, -- Demonheart Spaulders
+  [1292980] = { station = "Loom" }, -- Demonheart Boots
+  [1292981] = { station = "Master Forge", tools = "Blacksmith Hammer" }, -- Legplates of Glory
+  [1292982] = { station = "Master Forge", tools = "Blacksmith Hammer" }, -- Gauntlets of Glory
+  [1292983] = { station = "Master Forge", tools = "Blacksmith Hammer" }, -- Shoulders of Glory
+  [1292984] = { station = "Master Forge", tools = "Blacksmith Hammer" }, -- Greaves of Glory
+  [1292985] = { station = "Master Forge", tools = "Blacksmith Hammer" }, -- Legguards of Glory
+  [1292986] = { station = "Master Forge", tools = "Blacksmith Hammer" }, -- Handguards of Glory
+  [1292987] = { station = "Master Forge", tools = "Blacksmith Hammer" }, -- Pauldrons of Glory
+  [1292988] = { station = "Master Forge", tools = "Blacksmith Hammer" }, -- Sabatons of Glory
+  [1293559] = { station = "Alchemy Lab" }, -- Flask of Natural Accuracy
+  [1293560] = { station = "Alchemy Lab" }, -- Flask of Natural Aggression
+  [1293561] = { station = "Alchemy Lab" }, -- Flask of Natural Precision
+  [1293562] = { station = "Alchemy Lab" }, -- Flask of Natural Swiftness
+  [1293849] = { station = "Anarchist's Workbench" }, -- Swiftfeather Arrow
+  [1293850] = { station = "Anarchist's Workbench" }, -- Swiftstrike Shot
+  [1294014] = { station = "Iron Oven" }, -- Sweetpaw Jam
+  [1294054] = { tools = "Runed Arcanite Rod" }, -- Enchant Gloves - Lotus Claw
+  [1295805] = { station = "Cooking Fire" }, -- Briny Seafood Stew
+  [1295834] = { station = "Cooking Fire" }, -- Plain Ol' Paletusk
+  [1297120] = { station = "Loom", rep = "Cenarion Circle", repID = 609, standing = 5 }, -- Venomspew Gloves
+  [1297121] = { station = "Loom", rep = "Cenarion Circle", repID = 609, standing = 6 }, -- Venomspew Cord
+  [1297122] = { station = "Loom", rep = "Cenarion Circle", repID = 609, standing = 6 }, -- Venomspew Footpads
+  [1297123] = { station = "Loom", rep = "Cenarion Circle", repID = 609, standing = 5 }, -- Swarmtender's Gloves
+  [1297124] = { station = "Loom", rep = "Cenarion Circle", repID = 609, standing = 6 }, -- Swarmtender's Cord
+  [1297125] = { station = "Loom", rep = "Cenarion Circle", repID = 609, standing = 6 }, -- Swarmtender's Footpads
+  [1297126] = { station = "Sewing Machine", rep = "Cenarion Circle", repID = 609, standing = 5 }, -- Bileblister Claws
+  [1297127] = { station = "Sewing Machine", rep = "Cenarion Circle", repID = 609, standing = 6 }, -- Bileblister Girdle
+  [1297128] = { station = "Sewing Machine", rep = "Cenarion Circle", repID = 609, standing = 6 }, -- Bileblister Boots
+  [1297129] = { station = "Sewing Machine", rep = "Cenarion Circle", repID = 609, standing = 5 }, -- Hivethrasher's Claws
+  [1297130] = { station = "Sewing Machine", rep = "Cenarion Circle", repID = 609, standing = 6 }, -- Hivethrasher's Girdle
+  [1297131] = { station = "Sewing Machine", rep = "Cenarion Circle", repID = 609, standing = 6 }, -- Hivethrasher's Boots
+  [1297132] = { station = "Sewing Machine", rep = "Cenarion Circle", repID = 609, standing = 5 }, -- Scalegut Clenchers
+  [1297133] = { station = "Sewing Machine", rep = "Cenarion Circle", repID = 609, standing = 6 }, -- Scalegut Belt
+  [1297134] = { station = "Sewing Machine", rep = "Cenarion Circle", repID = 609, standing = 6 }, -- Scalegut Treaders
+  [1297135] = { station = "Sewing Machine", rep = "Cenarion Circle", repID = 609, standing = 5 }, -- Broodwatcher's Clenchers
+  [1297136] = { station = "Sewing Machine", rep = "Cenarion Circle", repID = 609, standing = 6 }, -- Broodwatcher's Belt
+  [1297137] = { station = "Sewing Machine", rep = "Cenarion Circle", repID = 609, standing = 6 }, -- Broodwatcher's Treaders
+  [1297138] = { station = "Master Forge", tools = "Blacksmith Hammer", rep = "Cenarion Circle", repID = 609, standing = 5 }, -- Goregasher Grips
+  [1297139] = { station = "Master Forge", tools = "Blacksmith Hammer", rep = "Cenarion Circle", repID = 609, standing = 6 }, -- Goregasher Support
+  [1297140] = { station = "Master Forge", tools = "Blacksmith Hammer", rep = "Cenarion Circle", repID = 609, standing = 6 }, -- Goregasher Stompers
+  [1297141] = { station = "Master Forge", tools = "Blacksmith Hammer", rep = "Cenarion Circle", repID = 609, standing = 5 }, -- Clutchlord's Grips
+  [1297142] = { station = "Master Forge", tools = "Blacksmith Hammer", rep = "Cenarion Circle", repID = 609, standing = 6 }, -- Clutchlord's Support
+  [1297143] = { station = "Master Forge", tools = "Blacksmith Hammer", rep = "Cenarion Circle", repID = 609, standing = 6 }, -- Clutchlord's Stompers
+  [1299914] = { station = "Sewing Machine" }, -- Spiritcaller Kilt
+  [1299915] = { station = "Sewing Machine" }, -- Spiritcaller Gloves
+  [1299916] = { station = "Sewing Machine" }, -- Spiritcaller Mantle
+  [1299917] = { station = "Sewing Machine" }, -- Spiritcaller Boots
+  [1301421] = { station = "Anvil", rep = "Nightclaw Druids", repID = 2758, standing = 6 }, -- Cloudy Skyforged Chainmail
+  [1301422] = { station = "Anvil", tools = "Blacksmith Hammer", rep = "Nightclaw Druids", repID = 2758, standing = 5 }, -- Cloudy Skyforged Wristguards
+  [1301423] = { station = "Anvil", tools = "Blacksmith Hammer", rep = "Nightclaw Druids", repID = 2758, standing = 5 }, -- Cloudy Skyforged Gauntlets
+  [1301424] = { station = "Anvil", tools = "Blacksmith Hammer", rep = "Nightclaw Druids", repID = 2758, standing = 5 }, -- Cloudy Skyforged Chain
+  [1301425] = { station = "Anvil", tools = "Blacksmith Hammer", rep = "Nightclaw Druids", repID = 2758, standing = 6 }, -- Cloudy Skyforged Legguards
+  [1301426] = { station = "Anvil", tools = "Blacksmith Hammer", rep = "Nightclaw Druids", repID = 2758, standing = 5 }, -- Cloudy Skyforged Greaves
+  [1301427] = { rep = "Nightclaw Druids", repID = 2758, standing = 6 }, -- Cloudy Gustwoven Harness
+  [1301428] = { rep = "Nightclaw Druids", repID = 2758, standing = 5 }, -- Cloudy Gustwoven Bracers
+  [1301429] = { rep = "Nightclaw Druids", repID = 2758, standing = 5 }, -- Cloudy Gustwoven Gloves
+  [1301430] = { rep = "Nightclaw Druids", repID = 2758, standing = 5 }, -- Cloudy Gustwoven Belt
+  [1301431] = { rep = "Nightclaw Druids", repID = 2758, standing = 6 }, -- Cloudy Gustwoven Trousers
+  [1301432] = { rep = "Nightclaw Druids", repID = 2758, standing = 5 }, -- Cloudy Gustwoven Boots
+  [1301433] = { rep = "Nightclaw Druids", repID = 2758, standing = 6 }, -- Cloudy Windraveled Jerkin
+  [1301434] = { rep = "Nightclaw Druids", repID = 2758, standing = 5 }, -- Cloudy Windraveled Armguards
+  [1301435] = { rep = "Nightclaw Druids", repID = 2758, standing = 5 }, -- Cloudy Windraveled Mitts
+  [1301436] = { rep = "Nightclaw Druids", repID = 2758, standing = 5 }, -- Cloudy Windraveled Strap
+  [1301437] = { rep = "Nightclaw Druids", repID = 2758, standing = 6 }, -- Cloudy Windraveled Pants
+  [1301438] = { rep = "Nightclaw Druids", repID = 2758, standing = 5 }, -- Cloudy Windraveled Footwraps
+  [1301439] = { rep = "Nightclaw Druids", repID = 2758, standing = 6 }, -- Cloudy Stormsewn Vest
+  [1301440] = { rep = "Nightclaw Druids", repID = 2758, standing = 5 }, -- Cloudy Stormsewn Cuffs
+  [1301441] = { rep = "Nightclaw Druids", repID = 2758, standing = 5 }, -- Cloudy Stormsewn Handwraps
+  [1301442] = { rep = "Nightclaw Druids", repID = 2758, standing = 5 }, -- Cloudy Stormsewn Cord
+  [1301443] = { rep = "Nightclaw Druids", repID = 2758, standing = 6 }, -- Cloudy Stormsewn Leggings
+  [1301444] = { rep = "Nightclaw Druids", repID = 2758, standing = 5 }, -- Cloudy Stormsewn Shoes
+  [1301445] = { station = "Anvil", tools = "Blacksmith Hammer", rep = "Nightclaw Druids", repID = 2758, standing = 6 }, -- Azure Skyforged Chainmail
+  [1301446] = { station = "Anvil", tools = "Blacksmith Hammer", rep = "Nightclaw Druids", repID = 2758, standing = 5 }, -- Azure Skyforged Wristguards
+  [1301447] = { station = "Anvil", tools = "Blacksmith Hammer", rep = "Nightclaw Druids", repID = 2758, standing = 5 }, -- Azure Skyforged Gauntlets
+  [1301448] = { station = "Anvil", tools = "Blacksmith Hammer", rep = "Nightclaw Druids", repID = 2758, standing = 5 }, -- Azure Skyforged Chain
+  [1301449] = { station = "Anvil", tools = "Blacksmith Hammer", rep = "Nightclaw Druids", repID = 2758, standing = 6 }, -- Azure Skyforged Legguards
+  [1301450] = { station = "Anvil", tools = "Blacksmith Hammer", rep = "Nightclaw Druids", repID = 2758, standing = 5 }, -- Azure Skyforged Greaves
+  [1301451] = { rep = "Nightclaw Druids", repID = 2758, standing = 6 }, -- Azure Gustwoven Harness
+  [1301452] = { rep = "Nightclaw Druids", repID = 2758, standing = 5 }, -- Azure Gustwoven Bracers
+  [1301453] = { rep = "Nightclaw Druids", repID = 2758, standing = 5 }, -- Azure Gustwoven Gloves
+  [1301454] = { rep = "Nightclaw Druids", repID = 2758, standing = 5 }, -- Azure Gustwoven Belt
+  [1301455] = { rep = "Nightclaw Druids", repID = 2758, standing = 6 }, -- Azure Gustwoven Trousers
+  [1301456] = { rep = "Nightclaw Druids", repID = 2758, standing = 5 }, -- Azure Gustwoven Boots
+  [1301457] = { rep = "Nightclaw Druids", repID = 2758, standing = 6 }, -- Azure Windraveled Jerkin
+  [1301458] = { rep = "Nightclaw Druids", repID = 2758, standing = 5 }, -- Azure Windraveled Armguards
+  [1301459] = { rep = "Nightclaw Druids", repID = 2758, standing = 5 }, -- Azure Windraveled Mitts
+  [1301460] = { rep = "Nightclaw Druids", repID = 2758, standing = 5 }, -- Azure Windraveled Strap
+  [1301461] = { rep = "Nightclaw Druids", repID = 2758, standing = 6 }, -- Azure Windraveled Pants
+  [1301462] = { rep = "Nightclaw Druids", repID = 2758, standing = 5 }, -- Azure Windraveled Footwraps
+  [1301463] = { rep = "Nightclaw Druids", repID = 2758, standing = 6 }, -- Azure Stormsewn Vest
+  [1301464] = { rep = "Nightclaw Druids", repID = 2758, standing = 5 }, -- Azure Stormsewn Cuffs
+  [1301465] = { rep = "Nightclaw Druids", repID = 2758, standing = 5 }, -- Azure Stormsewn Handwraps
+  [1301466] = { rep = "Nightclaw Druids", repID = 2758, standing = 5 }, -- Azure Stormsewn Cord
+  [1301468] = { rep = "Nightclaw Druids", repID = 2758, standing = 6 }, -- Azure Stormsewn Leggings
+  [1301469] = { rep = "Nightclaw Druids", repID = 2758, standing = 5 }, -- Azure Stormsewn Shoes
+  [1301526] = { station = "Anvil", tools = "Blacksmith Hammer", rep = "Earthen Ring", repID = 2787, standing = 5 }, -- Cloudy Skyforged Helm
+  [1301527] = { station = "Anvil", tools = "Blacksmith Hammer", rep = "Earthen Ring", repID = 2787, standing = 5 }, -- Cloudy Skyforged Pauldrons
+  [1301528] = { rep = "Earthen Ring", repID = 2787, standing = 5 }, -- Cloudy Gustwoven Hood
+  [1301529] = { rep = "Earthen Ring", repID = 2787, standing = 5 }, -- Cloudy Gustwoven Spaulders
+  [1301530] = { rep = "Earthen Ring", repID = 2787, standing = 5 }, -- Cloudy Windraveled Cover
+  [1301531] = { rep = "Earthen Ring", repID = 2787, standing = 5 }, -- Cloudy Windraveled Drapes
+  [1301532] = { rep = "Earthen Ring", repID = 2787, standing = 5 }, -- Cloudy Stormsewn Cowl
+  [1301533] = { rep = "Earthen Ring", repID = 2787, standing = 5 }, -- Cloudy Stormsewn Epaulets
+  [1301534] = { station = "Anvil", tools = "Blacksmith Hammer", rep = "Kirin Tor", repID = 2740, standing = 5 }, -- Azure Skyforged Helm
+  [1301535] = { station = "Anvil", tools = "Blacksmith Hammer", rep = "Kirin Tor", repID = 2740, standing = 5 }, -- Azure Skyforged Pauldrons
+  [1301536] = { rep = "Kirin Tor", repID = 2740, standing = 5 }, -- Azure Gustwoven Hood
+  [1301537] = { rep = "Kirin Tor", repID = 2740, standing = 5 }, -- Azure Gustwoven Spaulders
+  [1301538] = { rep = "Kirin Tor", repID = 2740, standing = 5 }, -- Azure Windraveled Cover
+  [1301539] = { rep = "Kirin Tor", repID = 2740, standing = 5 }, -- Azure Windraveled Drapes
+  [1301540] = { rep = "Kirin Tor", repID = 2740, standing = 5 }, -- Azure Stormsewn Cowl
+  [1301541] = { rep = "Kirin Tor", repID = 2740, standing = 5 }, -- Azure Stormsewn Epaulets
+  [1302161] = { tools = "Blacksmith Hammer, Arclight Spanner" }, -- Harvester Override Signalcaster
+  [1302598] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Rough Copper Chain Boots
+  [1306520] = { station = "Arcane Forge" }, -- Torch of Light
+  [1306521] = { station = "Arcane Forge" }, -- Steadfast Libram
+  [1306522] = { station = "Arcane Forge" }, -- Libram of Infusion
+  [1306523] = { station = "Arcane Forge" }, -- Totem of Urgency
+  [1306524] = { station = "Arcane Forge" }, -- Idol of Swiftness
+  [1306525] = { station = "Arcane Forge" }, -- Idol of the Ursine Twins
+  [1306526] = { station = "Sewing Machine" }, -- Elderwild Waistcord
+  [1306527] = { station = "Sewing Machine" }, -- Outlaw's Collar
+  [1306528] = { station = "Sewing Machine" }, -- Elderwild Pants
+  [1306529] = { station = "Sewing Machine" }, -- Eternity Pauldrons
+  [1306530] = { station = "Sewing Machine" }, -- Tranquil Wristguards
+  [1306531] = { station = "Sewing Machine" }, -- Mourning Handguards
+  [1306532] = { station = "Sewing Machine" }, -- Wild Leather Armor Kit
+  [1306533] = { station = "Master Forge", tools = "Blacksmith Hammer" }, -- Ironwood Blade
+  [1306534] = { station = "Master Forge", tools = "Blacksmith Hammer" }, -- Forest Defender's Axe
+  [1306535] = { station = "Master Forge", tools = "Blacksmith Hammer" }, -- Greenhammer
+  [1306536] = { station = "Master Forge", tools = "Blacksmith Hammer" }, -- Evergreen Shield
+  [1306537] = { station = "Master Forge", tools = "Blacksmith Hammer" }, -- Depleted Thorium Sabatons
+  [1306538] = { station = "Master Forge", tools = "Blacksmith Hammer" }, -- Heavy Thorium Gauntlets
+  [1306539] = { station = "Master Forge", tools = "Blacksmith Hammer" }, -- Azerothium Legplates
+  [1306540] = { station = "Loom" }, -- Robes of Fiery Devastation
+  [1306541] = { station = "Loom" }, -- Mana-infused Cord
+  [1306542] = { station = "Loom" }, -- Rime-encrusted Boots
+  [1306543] = { station = "Loom" }, -- Fel Cape
+  [1306544] = { station = "Loom" }, -- Cloak of Earth and Sky
+  [1306545] = { station = "Loom" }, -- Felblood Soul Bag
+  [1306546] = { station = "Anarchist's Workbench", tools = "Arclight Spanner, Gyromatic Micro-Adjustor" }, -- SAF-T Ultra Precision Scope
+  [1306547] = { station = "Anarchist's Workbench", tools = "Arclight Spanner, Gyromatic Micro-Adjustor" }, -- Hyper Deluxe Sniper Rifle Mk XVII
+  [1308178] = { station = "Anarchist's Workbench", tools = "Arclight Spanner, Gyromatic Micro-Adjustor" }, -- Whimsical Waistwrap
+  [1308179] = { station = "Anarchist's Workbench", tools = "Arclight Spanner, Gyromatic Micro-Adjustor" }, -- Gizmo Girdle
+  [1308180] = { station = "Anarchist's Workbench", tools = "Arclight Spanner, Gyromatic Micro-Adjustor" }, -- Clanking Cord
+  [1308183] = { station = "Anarchist's Workbench", tools = "Arclight Spanner, Gyromatic Micro-Adjustor" }, -- Floppy Goggles
+  [1308184] = { station = "Anarchist's Workbench", tools = "Arclight Spanner, Gyromatic Micro-Adjustor" }, -- Bent Goggles
+  [1308185] = { station = "Anarchist's Workbench", tools = "Arclight Spanner, Gyromatic Micro-Adjustor" }, -- Stuckbutton Goggles
+  [1308186] = { station = "Anarchist's Workbench", tools = "Arclight Spanner, Gyromatic Micro-Adjustor" }, -- Dented Goggles
+  [1317270] = { station = "Anvil", tools = "Blacksmith Hammer" }, -- Unsanctified Grenade
+  [1317279] = { cd = 169200, tools = "Philosopher's Stone" }, -- Legionite Bar
+  [1317958] = { station = "Anvil" }, -- Satchel of Copper Bombs
+  [1317959] = { station = "Anvil" }, -- Satchel of Bronze Bombs
+  [1317960] = { station = "Anvil" }, -- Satchel of Iron Bombs
+  [1317961] = { station = "Anvil" }, -- Satchel of Dark Iron Bombs
+  [1317962] = { station = "Anvil" }, -- Cracked Blacksmith Hammer
+  [1317963] = { station = "Anvil" }, -- Mithril Blacksmith Hammer
+  [1317964] = { station = "Anvil" }, -- Arcanite Blacksmith Hammer
+  [1319313] = { station = "Cooking Fire" }, -- Plated Armorfish
+  [1328948] = { tools = "Runed Truesilver Rod" }, -- Enchant Boots - Speed
 }

@@ -847,7 +847,9 @@ def faction_fits(house_name, ah):
     for word in ("Alliance", "Horde"):
         if word in house_name:
             return ah.endswith("-" + word)
-    return True  # Blackwater (neutral) houses are named after the player's faction in game
+    # Blackwater (neutral) houses: ProfScan stores goblin auction house scans as "Realm-Neutral"
+    # (older ones are under the scanning character's faction), so any key may fit
+    return True
 
 
 def cmd_api_houses(con, args):

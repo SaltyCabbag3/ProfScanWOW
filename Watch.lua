@@ -265,7 +265,7 @@ function ns:StartWatch()
   if #self.db.settings.focus == 0 then
     return self.Print("Nothing to watch yet: right-click items on the Prices tab, or /pscan focus <item>.")
   end
-  watch = { started = GetTime(), key = self.ahKey, next = {}, polls = 0, unsupported = {} }
+  watch = { started = GetTime(), key = self.openKey or self.ahKey, next = {}, polls = 0, unsupported = {} }
   wipe(self.books)
   wipe(self.activity)
   wipe(self.firstSeen)
@@ -298,7 +298,7 @@ function ns:ResumeWatchForAH()
   if not (watch and watch.closedAt) then return end
   watch.started = watch.started + (GetTime() - watch.closedAt)
   watch.closedAt = nil
-  watch.key = self.ahKey
+  watch.key = self.openKey or self.ahKey
   wipe(watch.next)
   wipe(self.books)
   self.Print(("Watch resumed: %d items."):format(#self.db.settings.focus))
@@ -311,6 +311,11 @@ end
 
 function ns:IsWatching()
   return watch ~= nil
+end
+
+-- The auction house being watched (its key), or nil.
+function ns:WatchKey()
+  return watch and watch.key
 end
 
 function ns:WatchStatus()

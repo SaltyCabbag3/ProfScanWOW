@@ -7,7 +7,8 @@ local _, ns = ...
               price. Vendor prices are learned whenever you open a merchant
               window (vials, thread, flux...), so recipes using them get a
               complete cost once you have visited the vendor.
-  Sell price  the better of the auction house price after the 5% cut and the
+  Sell price  the better of the auction house price after its cut (5%, 15% at
+              the goblin auction houses, see ns:AHCut) and the
               price a vendor pays (from item info).
   Yield       recipes that make several items per craft (bars, grenades,
               ammo) are costed per craft and earn price x average yield.
@@ -19,8 +20,6 @@ local _, ns = ...
               and the cheaper of buying or crafting is chosen.
 ]]
 
-local AH_CUT = 0.05
-ns.AH_CUT = AH_CUT
 
 -- Crafting bonuses ----------------------------------------------------------------------
 -- From Forever's game data (wago.tools DB2, build 1.60.1.70888): the Legacy trade
@@ -29,7 +28,7 @@ ns.AH_CUT = AH_CUT
 -- settings.bonuses[key] = rank (ranked) or true (toggles); missing = off.
 ns.BONUSES = {
   { key = "masterChef", name = "Master Chef", spell = 1225457, ranks = 5, per = 10, group = "Legacy talents", short = "cooking: extra results",
-    what = "Cooking recipes: %d%% chance to create an extra result." },
+    what = "Cooking recipes: %d%% chance to create one extra item (one, also for recipes that make several)." },
   { key = "bartering", name = "Bartering", spell = 1225459, ranks = 2, per = 5, group = "Legacy talents", short = "cheaper vendor reagents",
     what = "Vendor prices %d%% lower (reagents bought from vendors: vials, spices, thread, flux...).",
     note = "Vendor prices ProfScan learns are what the merchant charged, so it stores them as full prices "
@@ -39,7 +38,8 @@ ns.BONUSES = {
     what = "Crate turn-ins: %d%% chance of 100%% more Merchant's Favor (crates are priced for the average)." },
   { key = "meticulous", name = "Meticulous", spell = 1225465, value = 15, group = "In the game files, not in the tree yet",
     short = "potions, elixirs, flasks, First Aid",
-    what = "%d%% chance of extra results from First Aid recipes and Alchemy elixirs, potions, draughts and flasks." },
+    what = "%d%% chance of one extra item from First Aid recipes and Alchemy elixirs, potions, draughts and flasks "
+      .. "(assumed to work like Master Chef: one item, also for recipes that make several)." },
   { key = "optimization", name = "Optimization", spell = 1225460, value = 5, group = "In the game files, not in the tree yet",
     short = "reagent refunds (Eng, BS, LW, Tailoring)",
     what = "Engineering, Blacksmithing, Leatherworking, Tailoring: %d%% chance per reagent to be refunded "
@@ -66,7 +66,7 @@ local METICULOUS = { "Elixir", "Potion", "Draught", "Flask" }
 local REFUND_PROFS = { Engineering = true, Blacksmithing = true, Leatherworking = true, Tailoring = true }
 local SMELTS = { [2657] = true, [3304] = true, [2659] = true, [2658] = true } -- Copper, Tin, Bronze, Silver
 
--- Chance (0..1) of an extra result per craft from your bonuses.
+-- Chance (0..1) of one extra item per craft from your bonuses (ns.Yield adds it).
 function ns:ExtraResultChance(recipe)
   local prof = recipe.profession
   if prof == "Cooking" then return self:BonusValue("masterChef") / 100 end
@@ -299,7 +299,7 @@ end
 -- Best money for one: net price, "ah" | "vendor", the AH price before the cut.
 function ns:SellPrice(id)
   local ah = self:LatestAHPrice(id)
-  local net = ah and math.floor(ah * (1 - AH_CUT))
+  local net = ah and math.floor(ah * (1 - self:AHCut()))
   local vendor = self:VendorSellPrice(id)
   if vendor and (not net or vendor >= net) then return vendor, "vendor", ah end
   if net then return net, "ah", ah end
@@ -308,7 +308,7 @@ end
 -- Per craft: cost of buying every reagent, items made (average), what they
 -- sell for (sell = per item, revenue = per craft) and the margin.
 -- Selling on the auction house and to a vendor are also worked out separately:
---   ahNet / marginAH / pctAH          AH price after the 5% cut
+--   ahNet / marginAH / pctAH          AH price after the cut (5%, goblin 15%)
 --   vendorSell / marginVendor / pctVendor   what a vendor pays
 -- margin / marginPct are for whichever of the two pays more.
 -- Reagents are priced for a whole batch (see BatchCrafts): buying 6 crafts'
@@ -330,7 +330,7 @@ function ns:RecipeEconomics(recipe, batch) -- batch: crafts to price for (defaul
   e.complete = #recipe.reagents > 0 and e.missing == 0
   if recipe.item > 0 then
     e.sell, e.sellVia, e.ahPrice = self:SellPrice(recipe.item)
-    e.ahNet = e.ahPrice and math.floor(e.ahPrice * (1 - AH_CUT))
+    e.ahNet = e.ahPrice and math.floor(e.ahPrice * (1 - self:AHCut()))
     e.vendorSell = self:VendorSellPrice(recipe.item)
   end
   if e.sell then e.revenue = math.floor(e.sell * e.yield) end

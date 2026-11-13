@@ -226,7 +226,7 @@ function ns:StartScan(deep, focused)
   end
 
   scan = {
-    jobs = jobs, pos = 0, key = self.ahKey, stamp = time(), started = GetTime(), deep = deep,
+    jobs = jobs, pos = 0, key = self.openKey or self.ahKey, stamp = time(), started = GetTime(), deep = deep,
     items = items, focused = focused, gear = {}, browsed = 0,
     results = {}, -- [itemID] = { min =, qty =, ladder = }
     covered = {}, -- [itemID] = true once a batch containing it came back
@@ -386,7 +386,13 @@ ns.AUCTION_HOUSE_THROTTLED_MESSAGE_DROPPED = Resend
 
 function ns:AUCTION_HOUSE_SHOW()
   self.ahOpen = true
-  self.ahKey = self:CurrentAHKey()
+  local faction = self:OpenAHFaction()
+  if self.AHFaction(self.lastOpenKey) ~= faction then
+    self.Print(("%s auction house: scans are stored as its prices."):format(self.AH_NAMES[faction]))
+  end
+  self.openKey = self:AHKey(faction)
+  self.lastOpenKey = self.openKey
+  self:UpdateAHView()
   for _, id in ipairs(self.items) do KeyInfo(id) end
   for _, id in ipairs(self.focusItems) do KeyInfo(id) end
   for _, id in ipairs(self.db.settings.focus) do KeyInfo(id) end
@@ -407,6 +413,8 @@ function ns:AUCTION_HOUSE_CLOSED()
   self:PauseWatchForAH()
   req = nil
   driver:Hide()
+  self.openKey = nil
+  self:UpdateAHView()
   self:NotifyChanged()
 end
 

@@ -4,7 +4,11 @@ local _, ns = ...
   Interface
 
   Main window (/pscan, or the addon compartment button). Tabs:
-    Prices       every item on the scan list: lowest price, 7-day median, how
+    AH button    (top right) whose prices are shown and used for recipes: auto,
+                 Alliance, Horde or Goblin (ns.ahKey, see Core.lua).
+    Prices       every item on the scan list: lowest price on a faction auction
+                 house and on the goblin one, the goblin one's difference, the
+                 shown auction house's 7-day median, how
                  far the price is from it, quantity listed, sold per day
                  (measured by watch mode, or "~" = Blizzard API estimate), scan age. Click: item view. Right-click: watch or
                  unwatch. Ctrl-right-click: remove. Shift-click: link.
@@ -228,8 +232,57 @@ local stack = {} -- open views on top of the current tab: { kind =, arg =, title
 local TABS = { "prices", "recipes", "watch", "data" }
 local TAB_TITLES = { prices = "Prices", recipes = "Professions", watch = "Watch", data = "Data" }
 
+-- The two auction houses side by side on the Prices tab: a faction one (the one
+-- shown if it is a faction's, else your own) and the goblin one.
+local function ComparedAHs()
+  local shown = ns.AHFaction(ns.ahKey)
+  local faction = shown ~= "Neutral" and shown or ns:OwnAHFaction()
+  if faction == "Neutral" then faction = "Alliance" end
+  return faction, ns:AHKey(faction), ns:AHKey("Neutral")
+end
+
+local STALE = 3 * 86400 -- prices older than this are greyed: compare with care
+
+-- A price cell: grey when old, and marked when it is the auction house shown.
+local function PriceCell(price, t)
+  if not price then return "-" end
+  local text = ns.Money(price)
+  if t and time() - t > STALE then text = "|cff888888" .. text:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "") .. "|r" end
+  return text
+end
+
+-- Goblin price against the faction one: "+12%" (goblin dearer) / "-8%" (goblin cheaper).
+local function DiffCell(diff)
+  if not diff then return "-" end
+  local pct = math.floor(diff * 100 + (diff >= 0 and 0.5 or -0.5))
+  if pct > 0 then return "|cffff9955+" .. pct .. "%|r" end
+  if pct < 0 then return "|cff55ccff" .. pct .. "%|r" end
+  return "0%"
+end
+
+-- Tooltip lines: every auction house's latest price.
+local function AHLines(id)
+  local lines = {}
+  local _, factionKey = ComparedAHs()
+  local base = ns:LatestAHPrice(id, factionKey)
+  for _, f in ipairs(ns.AH_FACTIONS) do
+    local key = ns:AHKey(f)
+    local price, t = ns:LatestAHPrice(id, key)
+    local diff = f == "Neutral" and price and base and base > 0
+      and (" (%s vs %s)"):format(DiffCell(price / base - 1), ns.AH_NAMES[ns.AHFaction(factionKey)]) or ""
+    lines[#lines + 1] = ("%s AH%s: %s%s"):format(ns.AH_NAMES[f], key == ns.ahKey and " (shown)" or "",
+      price and (ns.Money(price) .. "  |cffaaaaaa" .. ns.Age(t) .. " ago|r") or "|cffaaaaaanot scanned|r", diff)
+  end
+  return lines
+end
+
 local function PriceRows()
   local rows, filter = {}, main.filter:GetText():lower()
+  local faction, factionKey, goblinKey = ComparedAHs()
+  local titles = main.prices.titles
+  local shownMark = function(key) return key == ns.ahKey and "|cffffffff" or "|cffaaaaaa" end
+  titles[2]:SetText(shownMark(factionKey) .. ns.AH_NAMES[faction] .. "|r")
+  titles[3]:SetText(shownMark(goblinKey) .. "Goblin|r")
   for _, id in ipairs(main.focusedList and ns.focusItems or ns.items) do
     local colored, name = ItemName(id)
     if filter == "" or name:lower():find(filter, 1, true) then
@@ -237,12 +290,18 @@ local function PriceRows()
       local r = st and st.latest
       local ratio = st and st.median and r.min > 0 and r.min / st.median or nil
       local sold, soldVia = ns:SoldPerDay(id)
+      local fac, facT = ns:LatestAHPrice(id, factionKey)
+      local gob, gobT = ns:LatestAHPrice(id, goblinKey)
+      local diff = fac and gob and fac > 0 and gob / fac - 1 or nil
       rows[#rows + 1] = {
         id = id,
         icon = GetItemIcon(id),
+        tooltipLines = AHLines(id),
         sort = {
           name = name,
-          min = r and r.min or 0,
+          fac = fac or 1e15,
+          gob = gob or 1e15,
+          diff = diff or 1e15,
           median = st and st.median or 0,
           ratio = ratio or 99,
           qty = r and r.qty or -1,
@@ -252,7 +311,9 @@ local function PriceRows()
         cells = {
           (ns:IsFocus(id) and "|cff33ccff[W]|r " or "")
             .. (not main.focusedList and ns:IsFocusScan(id) and "|cffffaa33[F]|r " or "") .. colored,
-          r and ns.Money(r.min) or "-",
+          PriceCell(fac, facT),
+          PriceCell(gob, gobT),
+          DiffCell(diff),
           st and ns.Money(st.median) or "-",
           Percent(ratio),
           r and r.qty or "-",
@@ -461,7 +522,8 @@ end
 local function CreatePricesPage(page)
   local hint = Text(page, "GameFontDisableSmall")
   hint:SetPoint("TOPLEFT", 4, -4)
-  hint:SetText("Click: details   Right-click: watch/unwatch   Ctrl-right-click: remove from this list   Shift-click: link")
+  hint:SetText("Click: details   Right-click: watch/unwatch   Ctrl-right-click: remove   Shift-click: link   "
+    .. "Hover: every auction house. Goblin diff: goblin price vs the faction one.")
   main.filter = CreateFrame("EditBox", nil, page, "InputBoxTemplate")
   main.filter:SetSize(140, 18)
   main.filter:SetPoint("TOPRIGHT", -4, 0)
@@ -491,8 +553,10 @@ local function CreatePricesPage(page)
 
   main.sortKey, main.sortDesc = "name", false
   main.prices = CreateTable(page, {
-    { title = "Item", width = 270, key = "name" },
-    { title = "Lowest", width = 95, justify = "RIGHT", key = "min" },
+    { title = "Item", width = 250, key = "name" },
+    { title = "Faction", width = 95, justify = "RIGHT", key = "fac" },
+    { title = "Goblin", width = 95, justify = "RIGHT", key = "gob" },
+    { title = "Goblin diff", width = 75, justify = "RIGHT", key = "diff" },
     { title = "7-day median", width = 95, justify = "RIGHT", key = "median" },
     { title = "vs median", width = 75, justify = "RIGHT", key = "ratio" },
     { title = "Listed", width = 65, justify = "RIGHT", key = "qty" },
@@ -613,8 +677,31 @@ local function CreateMain()
   main.back:SetPoint("LEFT", prev, "RIGHT", 16, 0)
   main.crumb = Text(main, "GameFontNormalSmall")
   main.crumb:SetPoint("LEFT", main.back, "RIGHT", 8, 0)
-  main.crumb:SetPoint("RIGHT", main, "RIGHT", -14, 0)
   main.crumb:SetWordWrap(false)
+
+  -- Which auction house's prices are shown and used for recipes (ns.ahKey, see Core.lua).
+  main.ahButton = Button(main, "", 170, function(_, button) ns:CycleAHView(button == "RightButton") end)
+  main.ahButton:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+  main.ahButton:SetPoint("TOPRIGHT", -14, -30)
+  main.crumb:SetPoint("RIGHT", main.ahButton, "LEFT", -8, 0)
+  local function AHButtonTooltip(self)
+    GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
+    GameTooltip:SetText("Auction house")
+    GameTooltip:AddLine("Whose prices ProfScan shows and prices recipes with: auto (the auction house you "
+      .. "have open, else your faction's), Alliance, Horde or Goblin. Prices from another faction's "
+      .. "auction house come from scans made by your characters of that faction. Selling at a goblin "
+      .. "auction house is priced with its 15% cut.", 1, 1, 1, true)
+    for _, f in ipairs(ns.AH_FACTIONS) do
+      local last = ns.lastScan[ns:AHKey(f)]
+      GameTooltip:AddDoubleLine(ns.AH_NAMES[f], last and ("last scan " .. ns.Age(last) .. " ago") or "no scans",
+        1, 0.82, 0, 0.8, 0.8, 0.8)
+    end
+    GameTooltip:AddLine("Click: next   Right-click: previous", 0.6, 0.6, 0.6)
+    GameTooltip:Show()
+  end
+  main.ahButton:SetScript("OnEnter", AHButtonTooltip)
+  main.ahButton:SetScript("OnLeave", GameTooltip_Hide)
+  main.ahButton:HookScript("OnClick", function(self) if GameTooltip:IsOwned(self) then AHButtonTooltip(self) end end)
 
   local function Content()
     local f = CreateFrame("Frame", nil, main)
@@ -663,6 +750,8 @@ local function CreateMain()
     if elapsed < 0.5 then return end
     elapsed = 0
     main.status:SetText(StatusText())
+    local shown = ns.AH_NAMES[ns.AHFaction(ns.ahKey)] or "?"
+    main.ahButton:SetText(ns.db.settings.viewAH and ("AH: " .. shown) or ("AH: auto (" .. shown .. ")"))
     UpdateControls(scanButtons, watchBtn)
     -- the watch tab shows ages and live activity, so keep it ticking
     if ns.dirty or (#stack == 0 and main.tab == "watch") then Refresh() end

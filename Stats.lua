@@ -246,7 +246,7 @@ local parsed = {} -- [ah .. id] = { t =, levels = } parse cache
 function ns:Ladder(id)
   local book = self.books and self.books[id]
   local stored = self.ladders[self.ahKey] and self.ladders[self.ahKey][id]
-  if book and book.t and (not stored or book.t >= stored.t) and self:IsWatching() then
+  if book and book.t and (not stored or book.t >= stored.t) and self:WatchKey() == self.ahKey then
     local levels = {}
     for i, level in ipairs(book.levels) do levels[i] = { level.price, level.qty } end
     return levels, book.t
@@ -264,14 +264,16 @@ function ns:Ladder(id)
 end
 
 -- Latest lowest price seen (skipping scans where nothing was listed), and when.
-function ns:LatestAHPrice(id)
-  local raw = self.index[self.ahKey] and self.index[self.ahKey][id]
+-- key: another auction house than the one shown (ns.ahKey).
+function ns:LatestAHPrice(id, key)
+  key = key or self.ahKey
+  local raw = self.index[key] and self.index[key][id]
   if raw then
     for i = #raw, 1, -1 do
       if raw[i].min > 0 then return raw[i].min, raw[i].t end
     end
   end
-  local daily = self.dailyIndex[self.ahKey] and self.dailyIndex[self.ahKey][id]
+  local daily = self.dailyIndex[key] and self.dailyIndex[key][id]
   if daily then
     for i = #daily, 1, -1 do
       if daily[i].median > 0 then return daily[i].median, daily[i].t end

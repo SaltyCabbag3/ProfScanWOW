@@ -85,7 +85,7 @@ function ns.UI.BuildDisenchantPane(parent)
   help:SetJustifyV("TOP")
   help:SetText("Yields are Classic's tables by item level (Forever keeps the same bands); "
     .. "~ = level 61+ gear, assumed to give what 61-65 gives. Materials are valued at what they sell for "
-    .. "(AH after the 5% cut). Hover a band for details; click it to open its cheapest item.")
+    .. "(AH after its cut: 5%, goblin 15%). Hover a band for details; click it to open its cheapest item.")
 
   local function MainMaterial(band)
     local best
