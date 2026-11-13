@@ -156,8 +156,9 @@ local function CreateTable(parent, columns, numRows)
       else
         GameTooltip:SetText(item.tooltipTitle) -- rows that aren't an item, e.g. crafting routes
       end
-      for _, line in ipairs(item.tooltipLines or {}) do
-        GameTooltip:AddLine(line, 0.2, 1, 0.6, true)
+      local lines = item.tooltipLines or {}
+      for i = 1, table.maxn(lines) do -- optional lines may be nil, so not ipairs
+        if lines[i] then GameTooltip:AddLine(lines[i], 0.2, 1, 0.6, true) end
       end
       GameTooltip:Show()
     end)

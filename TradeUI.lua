@@ -37,6 +37,9 @@ local _, ns = ...
   one envelope at a time, always the tier whose next envelope is cheapest per
   reputation (envelope at that depth + the tier's average item cost, since the
   writ inside is random).
+  Worth (both lists): what an empty crate or a sealed writ is worth buying against
+  the cheapest other crate / writ tier, green above its AH price (a good buy), red
+  below it (overpriced); see ns:CrateValues and ns:WritValues.
   Click: crates open the crate view (every fill, its crafting tree and costs),
   writs the recipe view. Right-click: add the item to the scan list.
   Shift-click: link it.
@@ -67,6 +70,109 @@ function ns:TradeItemPrice(id, qty)
   if price then return price, "ah" end
   return 0, "unknown"
 end
+
+-- What an empty crate or a sealed writ is worth buying, against the cheapest *other*
+-- way to the same Merchant's Favor or reputation, for one at today's prices:
+--   crate  cheapest other crate's net cost per Favor x this crate's Favor
+--          - its cheapest fill + its turn-in money
+--   writ   cheapest other tier's cost per reputation x this tier's reputation
+--          - the average cost of the items this tier's writs ask for
+-- Worth more than the AH price: a better deal than the other crates/tiers by the
+-- difference; less: overpriced (better sold, if you have one). Only alternatives whose
+-- own crate/envelope price is scanned count. Cached until the data changes.
+local valueCache = {}
+
+-- Cheapest of several values, skipping one index.
+local function BestOther(list, skip)
+  local best
+  for i, v in pairs(list) do
+    if i ~= skip and v and (not best or v.per < best.per) then best = v end
+  end
+  return best
+end
+
+-- [crate index] = { worth =, price =, fill =, pays =, other = { per =, name = } }
+function ns:CrateValues()
+  local key = self.changeGen .. ":" .. self.ahKey .. ":" .. self:BonusValue("performance")
+  if valueCache.crates and valueCache.cratesKey == key then return valueCache.crates end
+  local moneyPerFavor = self.db.settings.crateMoneyPerFavor or 0
+  local info, out = {}, {}
+  for i, c in ipairs(self.TRADE.crates) do
+    if c[4] then
+      local fill
+      for _, f in ipairs(c[5]) do
+        local unit = self:BestItemCost(f[1], f[2])
+        if unit and (not fill or unit * f[2] < fill) then fill = unit * f[2] end
+      end
+      local price = c[1] > 0 and self:BuyPrice(c[1], 1) or nil
+      local avg, pays = self:ExpectedFavor(c[4]), c[4] * moneyPerFavor
+      info[i] = { fill = fill, price = price, avg = avg, pays = pays, name = c[2],
+                  per = fill and price and (fill + price - pays) / avg }
+    end
+  end
+  local priced = {}
+  for i, v in pairs(info) do if v.per then priced[i] = v end end
+  for i, v in pairs(info) do
+    local other = BestOther(priced, i)
+    if other and v.fill then
+      out[i] = { worth = other.per * v.avg - v.fill + v.pays, price = v.price, fill = v.fill, pays = v.pays,
+                 other = other }
+    end
+  end
+  valueCache.crates, valueCache.cratesKey = out, key
+  return out
+end
+
+-- [tier] = { worth =, price =, avgItem =, rep =, other = { per =, tier = } }
+function ns:WritValues()
+  local key = self.changeGen .. ":" .. self.ahKey
+  if valueCache.writs and valueCache.writsKey == key then return valueCache.writs end
+  local data, info, out = self.TRADE, {}, {}
+  for _, tier in ipairs({ "J", "E", "A" }) do
+    local total, priced = 0, 0
+    for _, w in ipairs(data.writs) do
+      if w[2] == tier then
+        local unit = self:BestItemCost(w[3], w[5])
+        if unit then total, priced = total + unit * w[5], priced + 1 end
+      end
+    end
+    local rep, price = data.writRep[tier], self:BuyPrice(data.sealedWrits[tier], 1)
+    local avgItem = priced > 0 and total / priced or nil
+    info[tier] = { tier = tier, rep = rep, price = price, avgItem = avgItem,
+                   per = avgItem and price and (price + avgItem) / rep }
+  end
+  local priced = {}
+  for t, v in pairs(info) do if v.per then priced[t] = v end end
+  for t, v in pairs(info) do
+    local other = BestOther(priced, t)
+    if other and v.avgItem then
+      out[t] = { worth = other.per * v.rep - v.avgItem, price = v.price, avgItem = v.avgItem, rep = v.rep,
+                 other = other }
+    end
+  end
+  valueCache.writs, valueCache.writsKey = out, key
+  return out
+end
+
+-- Cell: the worth, green when above the AH price (a good buy), red below it.
+local function WorthCell(v)
+  if not v then return "|cffaaaaaa?|r" end
+  local text = v.worth > 0 and ns.Money(v.worth):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "") or "0"
+  if not v.price then return text end
+  return (v.worth >= v.price and "|cff40ff40" or "|cffff6060") .. text .. "|r"
+end
+
+-- Tooltip line for a worth estimate.
+local function WorthLine(v, what, otherText)
+  if not v then return ("Worth: not known yet (scan this %s and the alternatives)"):format(what) end
+  local verdict = not v.price and "its AH price isn't scanned yet"
+    or v.worth >= v.price and ("|cff40ff40a good buy|r at %s: %s cheaper than the alternatives"):format(
+      ns.Money(v.price), ns.Money(v.worth - v.price))
+    or ("|cffff6060overpriced|r at %s by %s (sell yours rather than use it)"):format(ns.Money(v.price),
+      ns.Money(v.price - v.worth))
+  return ("Worth about %s against %s: %s"):format(v.worth > 0 and ns.Money(v.worth) or "nothing", otherText, verdict)
+end
+ns.UI.WorthCell, ns.UI.WorthLine = WorthCell, WorthLine
 
 -- Where a buy price came from, for the "Via" column.
 local function Via(node)
@@ -182,6 +288,7 @@ function ns.UI.BuildTradePane(parent)
     { title = "Filled with", width = 140, key = "fill" },
     { title = "Favor", width = 38, justify = "RIGHT", key = "favor" },
     { title = "Crate", width = 64, justify = "RIGHT", key = "crate" },
+    { title = "Worth", width = 64, justify = "RIGHT", key = "worth" },
     { title = "Fill", width = 76, justify = "RIGHT", key = "cost" },
     { title = "Pays", width = 56, justify = "RIGHT", key = "pays" },
     { title = "Net/Favor", width = 76, justify = "RIGHT", key = "perFavor" },
@@ -200,6 +307,7 @@ function ns.UI.BuildTradePane(parent)
     { title = "Rep", width = 34, justify = "RIGHT", key = "rep" },
     { title = "Item", width = 72, justify = "RIGHT", key = "cost" },
     { title = "Envelope", width = 64, justify = "RIGHT", key = "sealed" },
+    { title = "Worth", width = 64, justify = "RIGHT", key = "worth" },
     { title = "Per 100 rep", width = 70, justify = "RIGHT", key = "per100" },
     { title = "Craft", width = 36, key = "known" },
   }, WRIT_ROWS)
@@ -259,6 +367,7 @@ function ns.UI.BuildTradePane(parent)
   local function CrateRows()
     local rows = {}
     wipe(shownItems)
+    local values = ns:CrateValues()
     for crateIndex, c in ipairs(data.crates) do
       local crateID, name, level, favor, fills = c[1], c[2], c[3], c[4], c[5]
       local avgFavor = ns:ExpectedFavor(favor) -- with Performance Bonus (Craft settings)
@@ -275,6 +384,9 @@ function ns.UI.BuildTradePane(parent)
       local pays = favor and favor * (ns.db.settings.crateMoneyPerFavor or 0)
       local cratePrice, crateState = ns:TradeItemPrice(crateID, need)
       shownItems[#shownItems + 1] = crateID
+      local value = values[crateIndex]
+      local worthLine = favor and UI.WorthLine(value, "crate", value and ("the cheapest other crate (%s, %s per Favor)"):format(
+        value.other.name, value.other.per > 0 and ns.Money(value.other.per) or "profit"))
       for _, o in ipairs(options) do
         local itemName = select(2, UI.ItemName(o.item))
         local best = o.cost and o.cost == bestCost
@@ -294,10 +406,12 @@ function ns.UI.BuildTradePane(parent)
             need > 1 and perFavor and ("Priced for %d crates (the Favor goal): about %s in total"):format(
               need, ns.Money(perFavor * avgFavor * need)) or nil,
             "Cheapest way to get the fill: " .. Via(o.node),
+            worthLine,
           },
           sort = {
             name = name, fill = itemName, favor = favor or -1, cost = o.cost or 1e12, pays = pays or -1,
             crate = crateState == "ah" and cratePrice or -1,
+            worth = value and value.price and value.worth - value.price or -1e12,
             perFavor = perFavor or 1e12, need = favor and need or -1,
           },
           cells = {
@@ -305,6 +419,7 @@ function ns.UI.BuildTradePane(parent)
             (best and "|cff40ff40" or "") .. o.qty .. " " .. itemName .. (best and "|r" or ""),
             favor or "?",
             crateState == "ah" and ns.Money(cratePrice) or crateState == "unknown" and "|cffaaaaaa?|r" or "-",
+            favor and UI.WorthCell(value) or "-",
             o.cost and ns.Money(o.cost) or "?",
             pays and ("~" .. ns.Money(pays)) or "?",
             not perFavor and "-" or (perFavor > 0 and ns.Money(perFavor) or "|cff40ff40profit|r")
@@ -322,6 +437,7 @@ function ns.UI.BuildTradePane(parent)
     wipe(shownItems)
     for _, id in pairs(data.sealedWrits) do shownItems[#shownItems + 1] = id end
     local onlyProf = state.prof > 0 and professions[state.prof + 1]
+    local values = ns:WritValues()
     for _, w in ipairs(data.writs) do
       local prof, tier, item, skill, qty, deliver = w[1], w[2], w[3], w[4], w[5], w[6]
       local known = KnowsRecipeFor(item)
@@ -333,6 +449,7 @@ function ns.UI.BuildTradePane(parent)
         local sealed, sealedState = ns:TradeItemPrice(data.sealedWrits[tier], ns:EnvelopesForGoal(rep))
         local per100 = cost and (cost + sealed) / rep * 100
         local itemName = select(2, UI.ItemName(item))
+        local value = values[tier]
         rows[#rows + 1] = {
           id = item,
           icon = UI.GetItemIcon(item),
@@ -343,17 +460,21 @@ function ns.UI.BuildTradePane(parent)
             sealedState == "ah" and ("A Sealed %s's Writ costs %s on the auction house (it holds a random %s writ)"):format(
               TIER_NAMES[tier], ns.Money(sealed), TIER_NAMES[tier])
               or sealedState == "unknown" and "Sealed writ price not scanned yet (counted as 0)" or nil,
+            ("Sealed %s's Writ: "):format(TIER_NAMES[tier]) .. UI.WorthLine(value, "envelope", value and
+              ("the cheapest other tier (%s, %s per 100 rep)"):format(TIER_NAMES[value.other.tier], ns.Money(value.other.per * 100))),
           },
           sort = {
             name = itemName, prof = prof, tier = ({ J = 1, E = 2, A = 3 })[tier], skill = skill, rep = rep,
             cost = cost or 1e12, per100 = per100 or 1e12, known = known and 0 or 1,
             sealed = sealedState == "ah" and sealed or -1,
+            worth = value and value.price and value.worth - value.price or -1e12,
           },
           cells = {
             (qty > 1 and (qty .. " x ") or "") .. (UI.ItemName(item)),
             prof, TIER_NAMES[tier], skill, rep,
             cost and ns.Money(cost) or "?",
             sealedState == "ah" and ns.Money(sealed) or sealedState == "unknown" and "|cffaaaaaa?|r" or "-",
+            UI.WorthCell(value),
             per100 and (ns.Money(per100) .. (sealedState == "unknown" and " |cffaaaaaa+?|r" or "")) or "-",
             known and "|cff40ff40yes|r" or "|cffaaaaaano|r",
           },
@@ -445,6 +566,7 @@ function ns.UI.BuildTradePane(parent)
   -- cost of the items that tier's writs ask for (all professions; the writ is random).
   local function TierSummary()
     local lines, tiers = {}, {}
+    local values = ns:WritValues()
     for _, tier in ipairs({ "J", "E", "A" }) do
       local total, priced, count = 0, 0, 0
       for _, w in ipairs(data.writs) do
@@ -464,6 +586,7 @@ function ns.UI.BuildTradePane(parent)
         lines[#lines + 1] = ("|cffffd100Sealed %s's Writ|r %s + average item %s (%d of %d priced) = %s per writ, %s per 100 rep"):format(
           TIER_NAMES[tier], sealedState == "ah" and ns.Money(sealed) or "|cffaaaaaa?|r", ns.Money(total / priced),
           priced, count, ns.Money(expected), ns.Money(expected / rep * 100))
+          .. (values[tier] and ("; worth %s vs the other tiers"):format(UI.WorthCell(values[tier])) or "")
       else
         lines[#lines + 1] = ("|cffffd100Sealed %s's Writ|r: no writ items priced yet (scan them)"):format(TIER_NAMES[tier])
       end
