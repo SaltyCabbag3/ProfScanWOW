@@ -92,6 +92,72 @@ local function DailyLine(ah, d)
   return table.concat(parts, ",")
 end
 
+-- Scans stored under the wrong auction house ---------------------------------------------
+-- A full or focused scan writes all its records with one time stamp, so a scan is
+-- "the records of one auction house with one stamp" (watch polls write a few at a time
+-- and are left out). /pscan scans lists them, /pscan scanah moves one.
+
+-- Newest first: { { key =, t =, items =, listed =, qty = }, ... }
+function ns:RecentScans(count)
+  local byStamp, list = {}, {}
+  for _, line in ipairs(self.db.log) do
+    local ah, t, _, min, qty = line:match("^([^,]*),(%d+),(%d+),(%d+),(%d+)")
+    if ah then
+      local k = ah .. "," .. t
+      local s = byStamp[k]
+      if not s then
+        s = { key = ah, t = tonumber(t), items = 0, listed = 0, qty = 0 }
+        byStamp[k] = s
+      end
+      s.items = s.items + 1
+      s.qty = s.qty + tonumber(qty)
+      if tonumber(min) > 0 then s.listed = s.listed + 1 end
+    end
+  end
+  for _, s in pairs(byStamp) do
+    if s.items >= 20 then list[#list + 1] = s end
+  end
+  table.sort(list, function(a, b) return a.t > b.t end)
+  for i = #list, (count or #list) + 1, -1 do list[i] = nil end
+  return list
+end
+
+-- Moves the records of one scan to another auction house key; returns how many.
+function ns:MoveScan(scan, toKey)
+  local prefix, moved = scan.key .. "," .. scan.t .. ",", 0
+  for i, line in ipairs(self.db.log) do
+    if line:sub(1, #prefix) == prefix then
+      self.db.log[i] = toKey .. line:sub(#scan.key + 1)
+      moved = moved + 1
+    end
+  end
+  if moved > 0 then self:LoadData() end
+  return moved
+end
+
+local SCAN_LIST_SIZE = 15
+
+function ns:PrintRecentScans()
+  local scans = self:RecentScans(SCAN_LIST_SIZE)
+  if #scans == 0 then return self.Print("No scans stored yet.") end
+  self.Print("Recent scans (a goblin auction house usually has far fewer items listed; "
+    .. "/pscan scanah <number> alliance|horde|goblin moves one):")
+  for i, s in ipairs(scans) do
+    print(("  %d.  %s  %s  %d items, %d listed, %d in total"):format(i, date("%m-%d %H:%M", s.t),
+      self.AH_NAMES[self.AHFaction(s.key)] or s.key, s.items, s.listed, s.qty))
+  end
+end
+
+function ns:MoveRecentScan(index, faction)
+  local scan = self:RecentScans(SCAN_LIST_SIZE)[index]
+  if not scan then return self.Print("No such scan: /pscan scans lists them.") end
+  local toKey = self:AHKey(faction)
+  if scan.key == toKey then return self.Print("That scan is already stored as " .. self.AH_NAMES[faction] .. ".") end
+  local moved = self:MoveScan(scan, toKey)
+  self.Print(("Moved the scan of %s (%d records) from %s to %s."):format(date("%m-%d %H:%M", scan.t), moved,
+    self.AH_NAMES[self.AHFaction(scan.key)] or scan.key, self.AH_NAMES[faction]))
+end
+
 -- Loading and adding -------------------------------------------------------------------
 
 local function IndexScan(ah, r)

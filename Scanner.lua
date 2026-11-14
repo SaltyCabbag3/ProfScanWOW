@@ -388,7 +388,8 @@ function ns:AUCTION_HOUSE_SHOW()
   self.ahOpen = true
   local faction = self:OpenAHFaction()
   if self.AHFaction(self.lastOpenKey) ~= faction then
-    self.Print(("%s auction house: scans are stored as its prices."):format(self.AH_NAMES[faction]))
+    self.Print(("%s auction house: scans are stored as its prices. Wrong? /pscan ah alliance|horde|goblin"):format(
+      self.AH_NAMES[faction]))
   end
   self.openKey = self:AHKey(faction)
   self.lastOpenKey = self.openKey

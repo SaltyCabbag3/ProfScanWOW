@@ -301,15 +301,49 @@ function ns:OwnAHFaction()
   return (f == "Alliance" or f == "Horde") and f or "Neutral"
 end
 
--- Which auction house was just opened: the auctioneer's faction, or Neutral in the
--- zones of the goblin auction houses, which have no faction one.
+-- Which auction house was just opened. The zones of the goblin auction houses have no
+-- faction one, so the zone decides first: a goblin auctioneer can report a faction (a
+-- goblin AH scan on 2026-11-13 was stored as Horde). Elsewhere the auctioneer's faction,
+-- else your own. /pscan ah corrects it for the open auction house, /pscan ahinfo shows
+-- what this sees.
 local NEUTRAL_MAPS = { [1434] = true, [1446] = true, [1452] = true } -- Stranglethorn Vale, Tanaris, Winterspring
+local NEUTRAL_ZONES = { ["Stranglethorn Vale"] = true, ["Tanaris"] = true, ["Winterspring"] = true,
+                        ["Booty Bay"] = true, ["Gadgetzan"] = true, ["Everlook"] = true }
+local function MapID()
+  return C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
+end
 function ns:OpenAHFaction()
+  local map = MapID()
+  if map and NEUTRAL_MAPS[map] then return "Neutral", "zone (map " .. map .. ")" end
+  if NEUTRAL_ZONES[GetRealZoneText() or ""] or NEUTRAL_ZONES[GetSubZoneText() or ""] then
+    return "Neutral", "zone name"
+  end
   local npc = UnitExists("npc") and UnitFactionGroup("npc")
-  if npc == "Alliance" or npc == "Horde" then return npc end
-  local map = C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
-  if map and NEUTRAL_MAPS[map] then return "Neutral" end
-  return self:OwnAHFaction()
+  if npc == "Alliance" or npc == "Horde" then return npc, "auctioneer's faction" end
+  return self:OwnAHFaction(), "your faction (nothing else to go by)"
+end
+
+-- /pscan ah alliance|horde|goblin: sets which auction house is open, for when it was guessed wrong.
+function ns:SetOpenAH(faction)
+  if not self.ahOpen then return self.Print("Open the auction house first.") end
+  if self:IsScanning() then return self.Print("Wait for the scan to finish (or /pscan stop) first.") end
+  self.openKey = self:AHKey(faction)
+  self.lastOpenKey = self.openKey
+  self:UpdateAHView()
+  self.Print(("This is the %s auction house now: scans are stored as its prices. To move a scan already "
+    .. "stored under the wrong one: /pscan scans."):format(self.AH_NAMES[faction]))
+end
+
+function ns:PrintAHInfo()
+  local map = MapID()
+  local faction, why = self:OpenAHFaction()
+  self.Print(("Map %s (%s), zone %q, subzone %q"):format(tostring(map),
+    map and C_Map.GetMapInfo and (C_Map.GetMapInfo(map) or {}).name or "?", GetRealZoneText() or "",
+    GetSubZoneText() or ""))
+  self.Print(("Auctioneer: %s, faction %s, %s"):format(UnitName("npc") or "none",
+    tostring(UnitFactionGroup("npc")), UnitGUID("npc") or "no GUID"))
+  self.Print(("Detected: %s (from %s). Open now: %s. Shown: %s."):format(self.AH_NAMES[faction], why,
+    self.openKey or "none", self.ahKey or "?"))
 end
 
 -- Sets ns.ahKey from settings.viewAH and the open auction house; redraws when it changed.
@@ -368,6 +402,10 @@ local HELP = {
   "/pscan fclear - empty the focused scan list (asks first)",
   "/pscan descan - Disenchant scan: all listed uncommon/rare/epic gear plus enchanting materials",
   "/pscan stop - stop the running scan (what was scanned so far is kept)",
+  "/pscan ah alliance|horde|goblin - set which auction house is open, if ProfScan guessed wrong",
+  "/pscan ahinfo - what ProfScan sees to tell the auction houses apart",
+  "/pscan scans - recent scans and the auction house each is stored under",
+  "/pscan scanah <number> alliance|horde|goblin - move a scan from that list to another auction house",
   "/pscan watch - start or stop watch mode (order book polling of the focus list)",
   "/pscan focus <item link or ID> - add an item to / remove it from the focus list",
   "/pscan focus clear - empty the focus (watch) list (asks first)",
@@ -385,6 +423,8 @@ local HELP = {
   "/pscan list [all] - check the scan list resolves to real items",
   "/pscan trim <days> - fold data older than <days> into daily summaries (asks first)",
 }
+
+local AH_WORDS = { alliance = "Alliance", horde = "Horde", goblin = "Neutral", neutral = "Neutral" }
 
 SLASH_PROFSCAN1 = "/pscan"
 SlashCmdList.PROFSCAN = function(msg)
@@ -450,6 +490,14 @@ SlashCmdList.PROFSCAN = function(msg)
     ns:StartScan(true, "disenchant")
   elseif cmd == "fclear" then
     ns:ConfirmClearFocusScan()
+  elseif cmd == "ah" and AH_WORDS[rest:lower()] then
+    ns:SetOpenAH(AH_WORDS[rest:lower()])
+  elseif cmd == "ahinfo" then
+    ns:PrintAHInfo()
+  elseif cmd == "scans" then
+    ns:PrintRecentScans()
+  elseif cmd == "scanah" and rest:match("^(%d+)%s+(%a+)$") and AH_WORDS[rest:match("(%a+)$"):lower()] then
+    ns:MoveRecentScan(tonumber(rest:match("^(%d+)")), AH_WORDS[rest:match("(%a+)$"):lower()])
   elseif cmd == "stop" then
     ns:StopScan("stopped")
   elseif cmd == "auto" then
