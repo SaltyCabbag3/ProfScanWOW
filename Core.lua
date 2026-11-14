@@ -275,7 +275,7 @@ end
 
 -- Auction houses ---------------------------------------------------------------------------
 -- History is kept per auction house key, "<realm>-Alliance", "<realm>-Horde" or
--- "<realm>-Neutral" (the goblin ones in Booty Bay, Gadgetzan and Everlook, shared
+-- "<realm>-Neutral" (the goblin ones in Ratchet, Booty Bay, Gadgetzan and Everlook, shared
 -- by both factions), so their prices never mix. Two keys are in use:
 --   ns.openKey  the auction house open now: scans and watch polls are stored under it;
 --   ns.ahKey    the one whose prices ProfScan shows and prices recipes with:
@@ -306,9 +306,9 @@ end
 -- goblin AH scan on 2026-11-13 was stored as Horde). Elsewhere the auctioneer's faction,
 -- else your own. /pscan ah corrects it for the open auction house, /pscan ahinfo shows
 -- what this sees.
-local NEUTRAL_MAPS = { [1434] = true, [1446] = true, [1452] = true } -- Stranglethorn Vale, Tanaris, Winterspring
-local NEUTRAL_ZONES = { ["Stranglethorn Vale"] = true, ["Tanaris"] = true, ["Winterspring"] = true,
-                        ["Booty Bay"] = true, ["Gadgetzan"] = true, ["Everlook"] = true }
+local NEUTRAL_MAPS = { [1413] = true, [1434] = true, [1446] = true, [1452] = true } -- Barrens, Stranglethorn Vale, Tanaris, Winterspring
+local NEUTRAL_ZONES = { ["The Barrens"] = true, ["Stranglethorn Vale"] = true, ["Tanaris"] = true, ["Winterspring"] = true,
+                        ["Ratchet"] = true, ["Booty Bay"] = true, ["Gadgetzan"] = true, ["Everlook"] = true }
 local function MapID()
   return C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
 end
